@@ -68,7 +68,7 @@ unicode-segmentation = "1"
 slint-build = "1.17"
 
 # Optimized for a background utility: smallest binary, lowest idle memory footprint.
-# Mandatory settings per rust-expander-binary-optimizer skill.
+# Mandatory settings per dotxpander-binary-optimizer skill.
 [profile.release]
 opt-level = "z"      # Optimize for binary size (smallest output)
 lto = true           # Full link-time optimization across all crates

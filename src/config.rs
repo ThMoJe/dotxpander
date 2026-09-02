@@ -610,7 +610,7 @@ pub fn delete_config_dir() {
 // previously happening inside the WH_KEYBOARD_LL hook callback.
 // The file is flushed on every write so log entries appear immediately.
 //
-// In release builds the function is a no-op unless the RUST_EXPANDER_LOG
+// In release builds the function is a no-op unless the DOTXPANDER_LOG
 // environment variable is set, keeping hot-path overhead at zero.
 
 static LOG_FILE: OnceLock<Mutex<Option<fs::File>>> = OnceLock::new();
@@ -629,7 +629,7 @@ static DEBUG_LOGGING_ENABLED: AtomicBool = AtomicBool::new(false);
 /// keyboard hook callback so they are skipped when logging is off.
 ///
 /// In debug builds this always returns `true` after the first `log_debug` call.
-/// In release builds it returns `true` only when `RUST_EXPANDER_LOG` is set.
+/// In release builds it returns `true` only when `DOTXPANDER_LOG` (or legacy `RUST_EXPANDER_LOG`) is set.
 #[inline]
 pub fn is_debug_logging_enabled() -> bool {
     DEBUG_LOGGING_ENABLED.load(Ordering::Relaxed)
@@ -638,7 +638,7 @@ pub fn is_debug_logging_enabled() -> bool {
 /// Writes a diagnostic message to debug.log in the config directory.
 ///
 /// The file is opened lazily on first call and kept open. In release builds
-/// this is a no-op unless the `RUST_EXPANDER_LOG` env-var is set.
+/// this is a no-op unless the `DOTXPANDER_LOG` env-var is set.
 ///
 /// **Do not call this directly from the keyboard hook hot path.** Use the
 /// `debug_log!` macro in `hook.rs` which skips `format!` evaluation entirely
@@ -657,7 +657,7 @@ pub fn log_debug(msg: &str) {
             return; // fast path: disabled, zero allocation
         }
         if state == 0 {
-            let enabled = env::var("RUST_EXPANDER_LOG").is_ok();
+            let enabled = env::var("DOTXPANDER_LOG").is_ok() || env::var("RUST_EXPANDER_LOG").is_ok();
             RELEASE_STATE.store(if enabled { 1 } else { 2 }, Ordering::Relaxed);
             DEBUG_LOGGING_ENABLED.store(enabled, Ordering::Relaxed);
             if !enabled {

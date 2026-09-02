@@ -2,14 +2,14 @@ use std::hint::black_box;
 use std::sync::Arc;
 use std::time::Instant;
 use arc_swap::ArcSwap;
-use rust_expander::buffer::KeyBuffer;
-use rust_expander::config::{default_config, ExpansionMode, Snippet};
-use rust_expander::replacer::Replacer;
-use rust_expander::text_utils::normalise_to_crlf;
+use dotxpander::buffer::KeyBuffer;
+use dotxpander::config::{default_config, ExpansionMode, Snippet};
+use dotxpander::replacer::Replacer;
+use dotxpander::text_utils::normalise_to_crlf;
 
 fn main() {
     println!("================================================================================");
-    println!("             Win-ARM Text Expander — Verified Performance Suite                 ");
+    println!("                dotXPANDER — Verified Performance Suite                         ");
     println!("================================================================================");
 
     let iterations = 1_000_000;

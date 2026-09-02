@@ -33,7 +33,7 @@ pub const WM_REHOOK: u32 = 0x0400 + 100; // WM_USER + 100 - signal to re-registe
 /// Unlike calling `crate::config::log_debug(&format!(...))` directly, this
 /// macro checks `is_debug_logging_enabled()` — a single relaxed `AtomicBool`
 /// read — **before** evaluating the `format!()` expression. When debug logging
-/// is disabled (the default in release builds without `RUST_EXPANDER_LOG`),
+/// is disabled (the default in release builds without `DOTXPANDER_LOG`),
 /// the format string is never evaluated and no heap allocation occurs.
 ///
 /// # Example
