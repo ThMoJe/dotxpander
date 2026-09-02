@@ -1,0 +1,77 @@
+[package]
+name = "dotxpander"
+# ⚠ SYNC: When bumping this version, also update `inputs.tag.default` in
+# .github/workflows/release.yml — GitHub Actions does not support dynamic defaults.
+version = "0.2.0"
+edition = "2024"
+description = "A lightweight, native Windows text expander for ARM64 and x86_64"
+authors = ["ThMoJe"]
+license = "MIT"
+repository = "https://github.com/ThMoJe/dotxpander"
+homepage = "https://github.com/ThMoJe/dotxpander"
+readme = "README.md"
+keywords = ["text-expander", "arm64", "windows-11", "slint", "productivity"]
+categories = ["accessibility", "command-line-utilities"]
+
+[lib]
+name = "dotxpander"
+path = "src/lib.rs"
+
+[[bin]]
+name = "dotxpander"
+path = "src/main.rs"
+
+[[bench]]
+name = "buffer_benchmark"
+harness = false
+
+[dependencies]
+# UI Framework - Slint with software renderer (safe on ARM64, no GPU driver issues)
+slint = { version = "1.17", default-features = false, features = [
+    "backend-winit",
+    "renderer-software",
+    "system-tray",
+    "compat-1-2",   # Mandatory in Slint 1.17 (enforced via compile_error!)
+] }
+
+# Windows API bindings
+windows = { version = "0.58", features = [
+    "Win32_Foundation",
+    "Win32_Graphics_Gdi",
+    "Win32_Security",
+    "Win32_UI_WindowsAndMessaging",
+    "Win32_UI_Input_KeyboardAndMouse",
+    "Win32_System_Threading",
+    "Win32_System_LibraryLoader",
+    "Win32_System_DataExchange",
+    "Win32_System_Memory",
+    "Win32_System_Com",
+    "Win32_UI_Shell",
+    "Win32_UI_Shell_Common",
+    "Win32_UI_Accessibility",
+    "Win32_System_Ole",
+    "Win32_System_Variant",
+    "Win32_System_Registry",
+] }
+
+# Configuration serialization
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"
+
+# Lock-free shared state between threads
+arc-swap = "1"
+
+# Unicode grapheme-aware word splitting for case transformations
+unicode-segmentation = "1"
+
+[build-dependencies]
+slint-build = "1.17"
+
+# Optimized for a background utility: smallest binary, lowest idle memory footprint.
+# Mandatory settings per rust-expander-binary-optimizer skill.
+[profile.release]
+opt-level = "z"      # Optimize for binary size (smallest output)
+lto = true           # Full link-time optimization across all crates
+codegen-units = 1    # Single codegen unit for maximum inlining/optimization
+strip = true         # Strip debug symbols and metadata from the binary
+panic = "abort"      # Remove unwinding machinery (saves ~50 KB+)
