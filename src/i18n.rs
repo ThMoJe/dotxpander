@@ -75,6 +75,8 @@ pub struct Strings {
     pub case_menu_space_to_dash: &'static str,
     pub case_menu_lower_camel: &'static str,
     pub case_menu_pascal_case: &'static str,
+    pub case_menu_windows_filename: &'static str,
+    pub case_menu_all_chars_invalid: &'static str,
 
     // Case Changer settings UI
     pub case_changer_label: &'static str,
@@ -166,6 +168,8 @@ const STRINGS_EN: Strings = Strings {
     case_menu_space_to_dash: "Replace space with -",
     case_menu_lower_camel: "lower&CamelCase",
     case_menu_pascal_case: "&PascalCase",
+    case_menu_windows_filename: "Windows &filename",
+    case_menu_all_chars_invalid: "All chars are invalid: ",
     case_changer_label: "Case/Space Changer:",
     case_changer_tooltip: "When enabled the Hotkey will open a change menu on any selected text in any program",
     tab_general: "\u{2699} General",
@@ -236,6 +240,8 @@ const STRINGS_DA: Strings = Strings {
     case_menu_space_to_dash: "Erstat mellemrum med -",
     case_menu_lower_camel: "lower&CamelCase",
     case_menu_pascal_case: "&PascalCase",
+    case_menu_windows_filename: "Windows &filnavn",
+    case_menu_all_chars_invalid: "Alle tegn er ugyldige: ",
     case_changer_label: "Kapitalisering/Mellemrums Skifter:",
     case_changer_tooltip: "Når aktiv åbner genvejstaste en ændringsmenu på den markerede tekst i et hvilket som helst program.",
     tab_general: "\u{2699} Generelt",
@@ -310,6 +316,8 @@ mod tests {
         assert!(!s.case_menu_space_to_dash.is_empty(), "case_menu_space_to_dash empty for {lang}");
         assert!(!s.case_menu_lower_camel.is_empty(), "case_menu_lower_camel empty for {lang}");
         assert!(!s.case_menu_pascal_case.is_empty(), "case_menu_pascal_case empty for {lang}");
+        assert!(!s.case_menu_windows_filename.is_empty(), "case_menu_windows_filename empty for {lang}");
+        assert!(!s.case_menu_all_chars_invalid.is_empty(), "case_menu_all_chars_invalid empty for {lang}");
         assert!(!s.case_changer_label.is_empty(), "case_changer_label empty for {lang}");
         assert!(!s.case_changer_tooltip.is_empty(), "case_changer_tooltip empty for {lang}");
         assert!(!s.tab_general.is_empty(), "tab_general empty for {lang}");

@@ -44,6 +44,7 @@ const IDM_REPLACE_SPACE_UNDERSCORE: u32 = 7;
 const IDM_REPLACE_SPACE_DASH: u32 = 8;
 const IDM_LOWER_CAMEL: u32 = 9;
 const IDM_PASCAL_CASE: u32 = 10;
+const IDM_WINDOWS_FILENAME: u32 = 11;
 
 /// Shows the case-changer popup menu and applies the selected transformation.
 ///
@@ -133,6 +134,7 @@ pub fn show_case_menu(config: &Arc<ArcSwap<AppConfig>>, restore_delay_ms: u64) {
         IDM_REPLACE_SPACE_DASH => crate::text_utils::replace_spaces_with_dash(&text),
         IDM_LOWER_CAMEL => crate::text_utils::to_lower_camel_case(&text),
         IDM_PASCAL_CASE => crate::text_utils::to_pascal_case(&text),
+        IDM_WINDOWS_FILENAME => crate::text_utils::to_windows_filename(&text, &lang),
         _ => {
             Replacer::restore_clipboard_formats(saved);
             return;
@@ -235,6 +237,9 @@ fn build_case_menu(lang: &str) -> Option<HMENU> {
         let _ = AppendMenuW(hmenu, MF_SEPARATOR, 0, None);
         append_string_item(hmenu, IDM_LOWER_CAMEL, s.case_menu_lower_camel);
         append_string_item(hmenu, IDM_PASCAL_CASE, s.case_menu_pascal_case);
+
+        let _ = AppendMenuW(hmenu, MF_SEPARATOR, 0, None);
+        append_string_item(hmenu, IDM_WINDOWS_FILENAME, s.case_menu_windows_filename);
 
         Some(hmenu)
     }

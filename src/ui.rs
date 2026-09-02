@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use arc_swap::ArcSwap;
@@ -361,97 +362,6 @@ fn setup_hotkey_capture_callbacks(
     });
 }
 
-/// Wires up tray open/quit and window quit/uninstall callbacks.
-#[allow(clippy::too_many_arguments)]
-fn setup_tray_callbacks(
-    tray: &AppTray,
-    window: &ConfigWindow,
-    hook_thread_id: u32,
-    config: Arc<ArcSwap<AppConfig>>,
-    pending_hotkey: Arc<Mutex<Option<HotkeyConfig>>>,
-    pending_cc_hotkey: Arc<Mutex<Option<HotkeyConfig>>>,
-    saved_size: Arc<Mutex<Option<LogicalSize>>>,
-    saved_pos: Arc<Mutex<Option<LogicalPosition>>>,
-) {
-    let window_weak = window.as_weak();
-    let config_for_open = config.clone();
-    tray.on_open_settings(move || {
-        if let Some(w) = window_weak.upgrade() {
-            crate::hook::set_recording_hotkey(false);
-            w.set_hotkey_capturing(false);
-            w.set_hotkey_conflict(false);
-            w.set_hotkey_can_save(false);
-            let current = config_for_open.load();
-            w.set_hotkey_display(hotkey_display_string(&current.hotkey));
-            w.set_quick_switch_enabled(current.quick_switch_enabled);
-            w.set_case_changer_enabled(current.case_changer_enabled);
-            w.set_snippet_hotkey_enabled(current.snippet_hotkey_enabled);
-            w.set_case_changer_hotkey_display(hotkey_display_string(&current.case_changer_hotkey));
-            w.set_case_changer_hotkey_capturing(false);
-            w.set_case_changer_hotkey_conflict(false);
-            w.set_case_changer_hotkey_can_save(false);
-            *pending_hotkey.lock().unwrap() = None;
-            *pending_cc_hotkey.lock().unwrap() = None;
-            w.set_save_error_message(SharedString::from(""));
-
-            // set_position BEFORE show (avoids Win32 white-window blit bug).
-            if let Some(pos) = *saved_pos.lock().unwrap() {
-                w.window().set_position(pos);
-            }
-            // show BEFORE set_size (needs visible window for correct DPI resolution).
-            let _ = w.show();
-            if let Some(sz) = *saved_size.lock().unwrap() {
-                w.window().set_size(sz);
-            } else {
-                w.window().set_size(LogicalSize::new(722.0, 485.0));
-            }
-
-            use windows::Win32::UI::WindowsAndMessaging::{
-                SetForegroundWindow, ShowWindow, SW_RESTORE, IsIconic, FindWindowW,
-            };
-            use windows::core::PCWSTR;
-            unsafe {
-                let title_str = w.get_window_title_text();
-                let wide: Vec<u16> = title_str.encode_utf16().chain(std::iter::once(0)).collect();
-                if let Ok(hwnd) = FindWindowW(PCWSTR::null(), PCWSTR(wide.as_ptr())) {
-                    if IsIconic(hwnd).as_bool() { let _ = ShowWindow(hwnd, SW_RESTORE); }
-                    let _ = SetForegroundWindow(hwnd);
-                }
-            }
-        }
-    });
-
-    let htid = hook_thread_id;
-    tray.on_quit_app(move || graceful_shutdown(htid));
-
-    let htid = hook_thread_id;
-    window.on_quit_app(move || graceful_shutdown(htid));
-
-    let htid = hook_thread_id;
-    let config_for_uninstall = config;
-    window.on_uninstall_app(move || {
-        let lang = config_for_uninstall.load().language.clone();
-        let s = crate::i18n::get_strings(&lang);
-        let confirmed = unsafe {
-            use windows::Win32::UI::WindowsAndMessaging::{
-                MessageBoxW, MB_ICONWARNING, MB_YESNO, MB_DEFBUTTON2, IDYES,
-            };
-            use windows::core::PCWSTR;
-            let title: Vec<u16> = s.uninstall_title.encode_utf16().chain(std::iter::once(0)).collect();
-            let body:  Vec<u16> = s.uninstall_body.encode_utf16().chain(std::iter::once(0)).collect();
-            MessageBoxW(None, PCWSTR(body.as_ptr()), PCWSTR(title.as_ptr()),
-                MB_ICONWARNING | MB_YESNO | MB_DEFBUTTON2) == IDYES
-        };
-        if confirmed {
-            crate::config::log_debug("UI: user confirmed uninstall");
-            if let Err(e) = crate::uninstall::self_destruct(htid) {
-                crate::config::log_debug(&format!("uninstall failed: {e}"));
-                eprintln!("uninstall failed: {e}");
-            }
-        }
-    });
-}
-
 /// Wires up snippet list callbacks: save_config, cancel_config,
 /// close_requested, add_snippet, remove_snippet.
 fn setup_snippet_callbacks(
@@ -461,11 +371,17 @@ fn setup_snippet_callbacks(
     hook_thread_id: u32,
     saved_size: Arc<Mutex<Option<LogicalSize>>>,
     saved_pos: Arc<Mutex<Option<LogicalPosition>>>,
+    active_window: Rc<RefCell<Option<ConfigWindow>>>,
+    buffer_timer_slot: Rc<RefCell<Option<Timer>>>,
 ) {
     let window_weak = window.as_weak();
-    let config_clone = config.clone();
+    let config_clone = config;
     let model_clone = snippets_model.clone();
     let htid = hook_thread_id;
+    let active_win_save = active_window.clone();
+    let timer_slot_save = buffer_timer_slot.clone();
+    let size_save = saved_size.clone();
+    let pos_save = saved_pos.clone();
     window.on_save_config(move || {
         if let Some(w) = window_weak.upgrade() {
             let current_config = config_clone.load();
@@ -488,12 +404,14 @@ fn setup_snippet_callbacks(
                     unsafe { let _ = PostThreadMessageW(htid, WM_REHOOK, WPARAM(0), LPARAM(0)); }
                     let scale = w.window().scale_factor();
                     let phys_size = w.window().size();
-                    *saved_size.lock().unwrap() = Some(LogicalSize::new(
+                    *size_save.lock().unwrap() = Some(LogicalSize::new(
                         phys_size.width as f32 / scale, phys_size.height as f32 / scale));
                     let phys_pos = w.window().position();
-                    *saved_pos.lock().unwrap() = Some(LogicalPosition::new(
+                    *pos_save.lock().unwrap() = Some(LogicalPosition::new(
                         phys_pos.x as f32 / scale, phys_pos.y as f32 / scale));
                     let _ = w.hide();
+                    *timer_slot_save.borrow_mut() = None;
+                    *active_win_save.borrow_mut() = None;
                     trim_working_set();
                 }
                 Err(e) => {
@@ -507,23 +425,43 @@ fn setup_snippet_callbacks(
     });
 
     let window_weak = window.as_weak();
-    let config_clone = config.clone();
-    let model_clone = snippets_model.clone();
+    let active_win_cancel = active_window.clone();
+    let timer_slot_cancel = buffer_timer_slot.clone();
+    let size_cancel = saved_size.clone();
+    let pos_cancel = saved_pos.clone();
     window.on_cancel_config(move || {
         if let Some(w) = window_weak.upgrade() {
-            model_clone.set_vec(config_to_snippet_models(&config_clone.load()));
+            let scale = w.window().scale_factor();
+            let phys_size = w.window().size();
+            *size_cancel.lock().unwrap() = Some(LogicalSize::new(
+                phys_size.width as f32 / scale, phys_size.height as f32 / scale));
+            let phys_pos = w.window().position();
+            *pos_cancel.lock().unwrap() = Some(LogicalPosition::new(
+                phys_pos.x as f32 / scale, phys_pos.y as f32 / scale));
             let _ = w.hide();
+            *timer_slot_cancel.borrow_mut() = None;
+            *active_win_cancel.borrow_mut() = None;
             trim_working_set();
         }
     });
 
     let window_weak = window.as_weak();
-    let config_for_close = config.clone();
-    let model_for_close = snippets_model.clone();
+    let active_win_close = active_window;
+    let timer_slot_close = buffer_timer_slot;
+    let size_close = saved_size;
+    let pos_close = saved_pos;
     window.window().on_close_requested(move || {
         if let Some(w) = window_weak.upgrade() {
-            model_for_close.set_vec(config_to_snippet_models(&config_for_close.load()));
+            let scale = w.window().scale_factor();
+            let phys_size = w.window().size();
+            *size_close.lock().unwrap() = Some(LogicalSize::new(
+                phys_size.width as f32 / scale, phys_size.height as f32 / scale));
+            let phys_pos = w.window().position();
+            *pos_close.lock().unwrap() = Some(LogicalPosition::new(
+                phys_pos.x as f32 / scale, phys_pos.y as f32 / scale));
             let _ = w.hide();
+            *timer_slot_close.borrow_mut() = None;
+            *active_win_close.borrow_mut() = None;
             trim_working_set();
         }
         slint::CloseRequestResponse::HideWindow
@@ -821,59 +759,170 @@ pub fn setup_and_run(
     show_settings_on_start: bool,
     quick_switch: Arc<Mutex<Option<crate::quick_switch::QuickSwitchManager>>>,
 ) -> Result<(), slint::PlatformError> {
-    let window = ConfigWindow::new()?;
-    let tray   = AppTray::new()?;
+    let tray = AppTray::new()?;
 
-    // Initial state
+    // Initialize tray localized strings
     let current_config = config.load();
-    let snippets_model = Rc::new(VecModel::from(config_to_snippet_models(&current_config)));
-    window.set_snippets(snippets_model.clone().into());
-    window.set_hotkey_display(hotkey_display_string(&current_config.hotkey));
-    window.set_config_file_path(SharedString::from(config::config_path().to_string_lossy().to_string()));
-    window.set_is_portable(config::is_portable());
-    window.set_quick_switch_enabled(current_config.quick_switch_enabled);
-    window.set_case_changer_enabled(current_config.case_changer_enabled);
-    window.set_snippet_hotkey_enabled(current_config.snippet_hotkey_enabled);
-    window.set_case_changer_hotkey_display(hotkey_display_string(&current_config.case_changer_hotkey));
-    let arch = if cfg!(target_arch = "aarch64") { "ARM64" } else { "x64" };
-    window.set_about_version_arch(SharedString::from(format!(
-        "v{} \u{2022} {}",
-        env!("CARGO_PKG_VERSION"),
-        arch
-    )));
-    apply_language(&window, &tray, &current_config.language);
+    let s = crate::i18n::get_strings(&current_config.language);
+    tray.set_tray_tooltip_text(SharedString::from(s.tray_tooltip));
+    tray.set_tray_open_text(SharedString::from(s.tray_open));
+    tray.set_tray_quit_text(SharedString::from(s.tray_quit));
+
+    // Shared state across settings window lifetimes
+    let active_window: Rc<RefCell<Option<ConfigWindow>>> = Rc::new(RefCell::new(None));
+    let buffer_timer_slot: Rc<RefCell<Option<Timer>>> = Rc::new(RefCell::new(None));
+    let pending_hotkey: Arc<Mutex<Option<HotkeyConfig>>> = Arc::new(Mutex::new(None));
+    let pending_cc_hotkey: Arc<Mutex<Option<HotkeyConfig>>> = Arc::new(Mutex::new(None));
+    let saved_size: Arc<Mutex<Option<LogicalSize>>> = Arc::new(Mutex::new(None));
+    let saved_pos: Arc<Mutex<Option<LogicalPosition>>> = Arc::new(Mutex::new(None));
+
+    let open_settings = {
+        let active_window = active_window.clone();
+        let tray_weak = tray.as_weak();
+        let config = config.clone();
+        let buffer_debug = buffer_debug.clone();
+        let buffer_timer_slot = buffer_timer_slot.clone();
+        let pending_hotkey = pending_hotkey.clone();
+        let pending_cc_hotkey = pending_cc_hotkey.clone();
+        let saved_size = saved_size.clone();
+        let saved_pos = saved_pos.clone();
+        let quick_switch = quick_switch.clone();
+
+        move || {
+            // If already open, bring to front
+            if let Some(w) = active_window.borrow().as_ref() {
+                use windows::Win32::UI::WindowsAndMessaging::{
+                    SetForegroundWindow, ShowWindow, SW_RESTORE, IsIconic, FindWindowW,
+                };
+                use windows::core::PCWSTR;
+                unsafe {
+                    let title_str = w.get_window_title_text();
+                    let wide: Vec<u16> = title_str.encode_utf16().chain(std::iter::once(0)).collect();
+                    if let Ok(hwnd) = FindWindowW(PCWSTR::null(), PCWSTR(wide.as_ptr())) {
+                        if IsIconic(hwnd).as_bool() { let _ = ShowWindow(hwnd, SW_RESTORE); }
+                        let _ = SetForegroundWindow(hwnd);
+                    }
+                }
+                return;
+            }
+
+            // Otherwise, instantiate ConfigWindow on demand
+            let window = match ConfigWindow::new() {
+                Ok(w) => w,
+                Err(e) => {
+                    config::log_debug(&format!("Failed to create ConfigWindow: {e}"));
+                    eprintln!("[dotxpander] Failed to create ConfigWindow: {e}");
+                    return;
+                }
+            };
+
+            // Initial window state
+            let current_config = config.load();
+            let snippets_model = Rc::new(VecModel::from(config_to_snippet_models(&current_config)));
+            window.set_snippets(snippets_model.clone().into());
+            window.set_hotkey_display(hotkey_display_string(&current_config.hotkey));
+            window.set_config_file_path(SharedString::from(config::config_path().to_string_lossy().to_string()));
+            window.set_is_portable(config::is_portable());
+            window.set_quick_switch_enabled(current_config.quick_switch_enabled);
+            window.set_case_changer_enabled(current_config.case_changer_enabled);
+            window.set_snippet_hotkey_enabled(current_config.snippet_hotkey_enabled);
+            window.set_case_changer_hotkey_display(hotkey_display_string(&current_config.case_changer_hotkey));
+            let arch = if cfg!(target_arch = "aarch64") { "ARM64" } else { "x64" };
+            window.set_about_version_arch(SharedString::from(format!(
+                "v{} \u{2022} {}",
+                env!("CARGO_PKG_VERSION"),
+                arch
+            )));
+            if let Some(t) = tray_weak.upgrade() {
+                apply_language(&window, &t, &current_config.language);
+            }
+
+            // Wire callbacks
+            setup_hotkey_capture_callbacks(&window, pending_hotkey.clone(), config.clone(), hook_thread_id);
+            setup_snippet_callbacks(
+                &window,
+                snippets_model,
+                config.clone(),
+                hook_thread_id,
+                saved_size.clone(),
+                saved_pos.clone(),
+                active_window.clone(),
+                buffer_timer_slot.clone(),
+            );
+            if let Some(t) = tray_weak.upgrade() {
+                setup_feature_toggle_callbacks(
+                    &window,
+                    &t,
+                    config.clone(),
+                    quick_switch.clone(),
+                    pending_cc_hotkey.clone(),
+                );
+            }
+
+            // Window quit and uninstall
+            let htid = hook_thread_id;
+            window.on_quit_app(move || graceful_shutdown(htid));
+
+            let htid = hook_thread_id;
+            let config_for_uninstall = config.clone();
+            window.on_uninstall_app(move || {
+                let lang = config_for_uninstall.load().language.clone();
+                let s = crate::i18n::get_strings(&lang);
+                let confirmed = unsafe {
+                    use windows::Win32::UI::WindowsAndMessaging::{
+                        MessageBoxW, MB_ICONWARNING, MB_YESNO, MB_DEFBUTTON2, IDYES,
+                    };
+                    use windows::core::PCWSTR;
+                    let title: Vec<u16> = s.uninstall_title.encode_utf16().chain(std::iter::once(0)).collect();
+                    let body:  Vec<u16> = s.uninstall_body.encode_utf16().chain(std::iter::once(0)).collect();
+                    MessageBoxW(None, PCWSTR(body.as_ptr()), PCWSTR(title.as_ptr()),
+                        MB_ICONWARNING | MB_YESNO | MB_DEFBUTTON2) == IDYES
+                };
+                if confirmed {
+                    crate::config::log_debug("UI: user confirmed uninstall");
+                    if let Err(e) = crate::uninstall::self_destruct(htid) {
+                        crate::config::log_debug(&format!("uninstall failed: {e}"));
+                        eprintln!("uninstall failed: {e}");
+                    }
+                }
+            });
+
+            // Position & show (set_position BEFORE show avoids Win32 white blit)
+            if let Some(pos) = *saved_pos.lock().unwrap() {
+                window.window().set_position(pos);
+            }
+            let _ = window.show();
+            if let Some(sz) = *saved_size.lock().unwrap() {
+                window.window().set_size(sz);
+            } else {
+                window.window().set_size(LogicalSize::new(722.0, 485.0));
+            }
+
+            // Buffer debug timer (active ONLY while window exists)
+            let timer = Timer::default();
+            let w_weak = window.as_weak();
+            let b_debug = buffer_debug.clone();
+            timer.start(TimerMode::Repeated, std::time::Duration::from_millis(50), move || {
+                if let Some(w) = w_weak.upgrade()
+                    && let Ok(content) = b_debug.try_lock() {
+                        w.set_buffer_content(SharedString::from(content.as_str()));
+                    }
+            });
+            *buffer_timer_slot.borrow_mut() = Some(timer);
+
+            *active_window.borrow_mut() = Some(window);
+        }
+    };
+
+    // Wire tray callbacks
+    let open_settings_clone = open_settings.clone();
+    tray.on_open_settings(move || open_settings_clone());
+    let htid = hook_thread_id;
+    tray.on_quit_app(move || graceful_shutdown(htid));
 
     if show_settings_on_start {
-        let _ = window.show();
-        window.window().set_size(LogicalSize::new(722.0, 485.0));
-    }
-
-    // Shared state
-    let pending_hotkey:    Arc<Mutex<Option<HotkeyConfig>>> = Arc::new(Mutex::new(None));
-    let pending_cc_hotkey: Arc<Mutex<Option<HotkeyConfig>>> = Arc::new(Mutex::new(None));
-    let saved_size: Arc<Mutex<Option<LogicalSize>>>     = Arc::new(Mutex::new(None));
-    let saved_pos:  Arc<Mutex<Option<LogicalPosition>>> = Arc::new(Mutex::new(None));
-
-    // Buffer debug timer (50 ms poll)
-    let buffer_timer = Timer::default();
-    let window_weak = window.as_weak();
-    let buffer_debug_clone = buffer_debug;
-    buffer_timer.start(TimerMode::Repeated, std::time::Duration::from_millis(50), move || {
-        if let Some(w) = window_weak.upgrade()
-            && let Ok(content) = buffer_debug_clone.try_lock() {
-                w.set_buffer_content(SharedString::from(content.as_str()));
-            }
-    });
-
-    // Wire callbacks
-    setup_hotkey_capture_callbacks(&window, pending_hotkey.clone(), config.clone(), hook_thread_id);
-    setup_tray_callbacks(&tray, &window, hook_thread_id, config.clone(),
-        pending_hotkey, pending_cc_hotkey.clone(), saved_size.clone(), saved_pos.clone());
-    setup_snippet_callbacks(&window, snippets_model, config.clone(),
-        hook_thread_id, saved_size, saved_pos);
-    setup_feature_toggle_callbacks(&window, &tray, config, quick_switch, pending_cc_hotkey);
-
-    if !show_settings_on_start {
+        open_settings();
+    } else {
         trim_working_set();
     }
 

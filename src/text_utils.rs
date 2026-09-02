@@ -231,6 +231,71 @@ fn split_into_words(text: &str) -> Vec<&str> {
     words
 }
 
+/// Transforms `text` to be safe for use as a Windows filename.
+///
+/// Rules:
+/// - Windows-forbidden characters (`<`, `>`, `:`, `"`, `/`, `\`, `|`, `?`, `*`,
+///   and ASCII control characters 0–31) are stripped completely.
+/// - International and special characters across all languages (e.g. Danish `æ`,
+///   `ø`, `å`) are preserved.
+/// - Spaces are preserved. Consecutive whitespace and newlines (`\r`, `\n`) are
+///   collapsed to a single space.
+/// - Leading and trailing spaces and dots (`.`) are trimmed.
+/// - Original letter casing is preserved.
+/// - Truncated to 255 characters (Windows maximum filename component limit),
+///   re-trimming any trailing dots or spaces at the boundary.
+/// - If all characters are invalid or trimmed away, returns the localized prefix
+///   (`"All chars are invalid: "` in English, `"Alle tegn er ugyldige: "` in Danish)
+///   followed by `text`.
+#[must_use]
+pub fn to_windows_filename(text: &str, lang: &str) -> String {
+    if text.is_empty() {
+        return String::new();
+    }
+
+    let mut filtered = String::with_capacity(text.len());
+    let mut in_whitespace = false;
+
+    for ch in text.chars() {
+        if ch.is_whitespace() {
+            if !in_whitespace {
+                filtered.push(' ');
+                in_whitespace = true;
+            }
+        } else if is_windows_forbidden_char(ch) {
+            // Strip forbidden character without altering whitespace state
+        } else {
+            filtered.push(ch);
+            in_whitespace = false;
+        }
+    }
+
+    let trimmed = filtered.trim_matches([' ', '.']);
+
+    if trimmed.is_empty() {
+        let prefix = crate::i18n::get_strings(lang).case_menu_all_chars_invalid;
+        return format!("{prefix}{text}");
+    }
+
+    let mut result = if trimmed.chars().count() > 255 {
+        let truncated: String = trimmed.chars().take(255).collect();
+        truncated.trim_end_matches([' ', '.']).to_string()
+    } else {
+        trimmed.to_string()
+    };
+
+    if result.is_empty() {
+        let prefix = crate::i18n::get_strings(lang).case_menu_all_chars_invalid;
+        result = format!("{prefix}{text}");
+    }
+
+    result
+}
+
+fn is_windows_forbidden_char(c: char) -> bool {
+    matches!(c, '<' | '>' | ':' | '"' | '/' | '\\' | '|' | '?' | '*' | '\0'..='\x1f')
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -622,5 +687,106 @@ mod tests {
     #[test]
     fn test_pascal_all_caps_words() {
         assert_eq!(to_pascal_case("HELLO WORLD"), "HelloWorld");
+    }
+
+    // -------------------------------------------------------------------------
+    // to_windows_filename
+    // -------------------------------------------------------------------------
+
+    #[test]
+    fn test_windows_filename_basic() {
+        assert_eq!(to_windows_filename("hello world", "en"), "hello world");
+    }
+
+    #[test]
+    fn test_windows_filename_strips_forbidden_chars() {
+        assert_eq!(
+            to_windows_filename("Report: 2026/Q1 *Final* <draft>? | \\ \"", "en"),
+            "Report 2026Q1 Final draft"
+        );
+    }
+
+    #[test]
+    fn test_windows_filename_strips_control_chars() {
+        assert_eq!(
+            to_windows_filename("hello\x01\x1fworld", "en"),
+            "helloworld"
+        );
+    }
+
+    #[test]
+    fn test_windows_filename_collapses_whitespace_and_newlines() {
+        assert_eq!(
+            to_windows_filename("hello \r\n\t  world\nfoo", "en"),
+            "hello world foo"
+        );
+    }
+
+    #[test]
+    fn test_windows_filename_trims_leading_trailing_spaces_and_dots() {
+        assert_eq!(
+            to_windows_filename("  ...hello world...  ", "en"),
+            "hello world"
+        );
+    }
+
+    #[test]
+    fn test_windows_filename_preserves_internal_dots() {
+        assert_eq!(
+            to_windows_filename("archive.tar.gz", "en"),
+            "archive.tar.gz"
+        );
+    }
+
+    #[test]
+    fn test_windows_filename_preserves_danish_and_international() {
+        assert_eq!(
+            to_windows_filename("Danish æ, ø og å - Ä, ö, ü & 日本語", "en"),
+            "Danish æ, ø og å - Ä, ö, ü & 日本語"
+        );
+    }
+
+    #[test]
+    fn test_windows_filename_preserves_casing() {
+        assert_eq!(
+            to_windows_filename("MyCamelCaseDocument", "en"),
+            "MyCamelCaseDocument"
+        );
+    }
+
+    #[test]
+    fn test_windows_filename_all_invalid_en() {
+        assert_eq!(
+            to_windows_filename(":::*?<>", "en"),
+            "All chars are invalid: :::*?<>"
+        );
+    }
+
+    #[test]
+    fn test_windows_filename_all_invalid_da() {
+        assert_eq!(
+            to_windows_filename(":::*?<>", "da"),
+            "Alle tegn er ugyldige: :::*?<>"
+        );
+    }
+
+    #[test]
+    fn test_windows_filename_empty() {
+        assert_eq!(to_windows_filename("", "en"), "");
+    }
+
+    #[test]
+    fn test_windows_filename_truncates_to_255() {
+        let long_name = "a".repeat(300);
+        let result = to_windows_filename(&long_name, "en");
+        assert_eq!(result.chars().count(), 255);
+        assert_eq!(result, "a".repeat(255));
+    }
+
+    #[test]
+    fn test_windows_filename_truncation_re_trims_dots_and_spaces() {
+        let long_name = format!("{}. ...", "a".repeat(254));
+        let result = to_windows_filename(&long_name, "en");
+        assert_eq!(result, "a".repeat(254));
     }
 }
