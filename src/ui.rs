@@ -164,6 +164,23 @@ fn open_browser_url(url: &str) {
     }
 }
 
+/// Trims the process working set, releasing dormant UI buffers and caches back to the OS.
+///
+/// Called whenever the settings window is hidden to the system tray.
+/// Uses `SetProcessWorkingSetSize(GetCurrentProcess(), usize::MAX, usize::MAX)`,
+/// which Windows documents as temporarily trimming the working set to zero,
+/// dropping idle physical RAM usage down to minimal background levels.
+pub fn trim_working_set() {
+    unsafe {
+        use windows::Win32::System::Threading::{GetCurrentProcess, SetProcessWorkingSetSize};
+        if let Err(e) = SetProcessWorkingSetSize(GetCurrentProcess(), usize::MAX, usize::MAX) {
+            config::log_debug(&format!("trim_working_set: failed: {e}"));
+        } else {
+            config::log_debug("trim_working_set: working set successfully trimmed");
+        }
+    }
+}
+
 /// Applies all i18n strings to the `ConfigWindow` and `AppTray` for the given language.
 fn apply_language(window: &ConfigWindow, tray: &AppTray, lang: &str) {
     let s = crate::i18n::get_strings(lang);
@@ -477,6 +494,7 @@ fn setup_snippet_callbacks(
                     *saved_pos.lock().unwrap() = Some(LogicalPosition::new(
                         phys_pos.x as f32 / scale, phys_pos.y as f32 / scale));
                     let _ = w.hide();
+                    trim_working_set();
                 }
                 Err(e) => {
                     let msg = format!("Save failed: {e}");
@@ -495,6 +513,7 @@ fn setup_snippet_callbacks(
         if let Some(w) = window_weak.upgrade() {
             model_clone.set_vec(config_to_snippet_models(&config_clone.load()));
             let _ = w.hide();
+            trim_working_set();
         }
     });
 
@@ -505,6 +524,7 @@ fn setup_snippet_callbacks(
         if let Some(w) = window_weak.upgrade() {
             model_for_close.set_vec(config_to_snippet_models(&config_for_close.load()));
             let _ = w.hide();
+            trim_working_set();
         }
         slint::CloseRequestResponse::HideWindow
     });
@@ -853,6 +873,10 @@ pub fn setup_and_run(
         hook_thread_id, saved_size, saved_pos);
     setup_feature_toggle_callbacks(&window, &tray, config, quick_switch, pending_cc_hotkey);
 
+    if !show_settings_on_start {
+        trim_working_set();
+    }
+
     // Run the Slint event loop (blocks until graceful_shutdown)
     slint::run_event_loop()?;
     Ok(())
@@ -866,5 +890,10 @@ mod tests {
     fn test_developers_list_not_empty_and_contains_thmoje() {
         assert!(!DEVELOPERS.is_empty(), "DEVELOPERS list must not be empty");
         assert!(DEVELOPERS.contains(&"ThMoJe"), "DEVELOPERS list must contain ThMoJe");
+    }
+
+    #[test]
+    fn test_trim_working_set_does_not_panic() {
+        trim_working_set();
     }
 }
