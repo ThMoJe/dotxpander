@@ -138,6 +138,32 @@ fn parse_key_event(text: &str, mut ctrl: bool, alt: bool, shift: bool, win: bool
     Some(HotkeyConfig { modifiers, virtual_key: vk })
 }
 
+/// Active developers credited in the About tab. Extensible for future contributors.
+pub const DEVELOPERS: &[&str] = &["ThMoJe"];
+
+/// Opens a URL in the user's default browser via native Windows ShellExecuteW.
+fn open_browser_url(url: &str) {
+    use windows::core::HSTRING;
+    use windows::Win32::UI::Shell::ShellExecuteW;
+    use windows::Win32::UI::WindowsAndMessaging::SW_SHOWNORMAL;
+    let url_hstring = HSTRING::from(url);
+    unsafe {
+        let result = ShellExecuteW(
+            None,
+            windows::core::w!("open"),
+            &url_hstring,
+            None,
+            None,
+            SW_SHOWNORMAL,
+        );
+        let code = result.0 as usize;
+        if code <= 32 {
+            config::log_debug(&format!("ShellExecuteW failed for {url} with code {code}"));
+            eprintln!("[dotxpander] Failed to open URL '{url}': ShellExecuteW error code {code}");
+        }
+    }
+}
+
 /// Applies all i18n strings to the `ConfigWindow` and `AppTray` for the given language.
 fn apply_language(window: &ConfigWindow, tray: &AppTray, lang: &str) {
     let s = crate::i18n::get_strings(lang);
@@ -182,6 +208,18 @@ fn apply_language(window: &ConfigWindow, tray: &AppTray, lang: &str) {
     window.set_i18n_mode_installed(SharedString::from(s.mode_installed));
     window.set_i18n_move_config(SharedString::from(s.move_config_btn));
     window.set_i18n_mode_portable_tooltip(SharedString::from(s.mode_portable_tooltip));
+    window.set_i18n_tab_about(SharedString::from(s.tab_about));
+    window.set_i18n_about_tagline(SharedString::from(s.about_tagline));
+    window.set_i18n_about_developed_by(SharedString::from(format!(
+        "{}: {}",
+        s.about_developed_by,
+        DEVELOPERS.join(", ")
+    )));
+    window.set_i18n_about_btn_website(SharedString::from(s.about_btn_website));
+    window.set_i18n_about_btn_github(SharedString::from(s.about_btn_github));
+    window.set_i18n_about_license(SharedString::from(s.about_license));
+    window.set_i18n_about_disclaimer_title(SharedString::from(s.about_disclaimer_title));
+    window.set_i18n_about_disclaimer_text(SharedString::from(s.about_disclaimer_text));
 }
 
 // ---------------------------------------------------------------------------
@@ -519,6 +557,18 @@ fn setup_feature_toggle_callbacks(
         let _ = std::process::Command::new("explorer").arg(config::config_dir()).spawn();
     });
 
+    window.on_open_website(move || {
+        open_browser_url("https://aivolution.dk/dotxpander");
+    });
+
+    window.on_open_github(move || {
+        open_browser_url("https://github.com/ThMoJe/dotxpander");
+    });
+
+    window.on_open_license(move || {
+        open_browser_url("https://github.com/ThMoJe/dotxpander/blob/main/LICENSE");
+    });
+
     let window_weak = window.as_weak();
     window.on_move_config_folder(move || {
         // Open native IFileDialog folder picker.
@@ -765,6 +815,12 @@ pub fn setup_and_run(
     window.set_case_changer_enabled(current_config.case_changer_enabled);
     window.set_snippet_hotkey_enabled(current_config.snippet_hotkey_enabled);
     window.set_case_changer_hotkey_display(hotkey_display_string(&current_config.case_changer_hotkey));
+    let arch = if cfg!(target_arch = "aarch64") { "ARM64" } else { "x64" };
+    window.set_about_version_arch(SharedString::from(format!(
+        "v{} \u{2022} {}",
+        env!("CARGO_PKG_VERSION"),
+        arch
+    )));
     apply_language(&window, &tray, &current_config.language);
 
     if show_settings_on_start {
@@ -800,4 +856,15 @@ pub fn setup_and_run(
     // Run the Slint event loop (blocks until graceful_shutdown)
     slint::run_event_loop()?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_developers_list_not_empty_and_contains_thmoje() {
+        assert!(!DEVELOPERS.is_empty(), "DEVELOPERS list must not be empty");
+        assert!(DEVELOPERS.contains(&"ThMoJe"), "DEVELOPERS list must contain ThMoJe");
+    }
 }

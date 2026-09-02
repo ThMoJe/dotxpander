@@ -95,6 +95,16 @@ pub struct Strings {
     #[allow(dead_code)]
     pub move_config_tooltip: &'static str,
     pub mode_portable_tooltip: &'static str,
+
+    // About tab
+    pub tab_about: &'static str,
+    pub about_tagline: &'static str,
+    pub about_developed_by: &'static str,
+    pub about_btn_website: &'static str,
+    pub about_btn_github: &'static str,
+    pub about_license: &'static str,
+    pub about_disclaimer_title: &'static str,
+    pub about_disclaimer_text: &'static str,
 }
 
 /// Returns the UI strings for the given language code.
@@ -167,6 +177,14 @@ const STRINGS_EN: Strings = Strings {
     move_config_btn: "Move Config File\u{2026}",
     move_config_tooltip: "Move config file to a new folder (e.g., a cloud-synced folder to share settings across computers)",
     mode_portable_tooltip: "The app is running in Portable mode and you cannot change the folder where the config file is stored. To store the config file in a cloud-synced folder, install the app with the installer.",
+    tab_about: "\u{2139} About",
+    about_tagline: "Lightweight, native Windows text expander and productivity utility",
+    about_developed_by: "Developed by",
+    about_btn_website: "Website",
+    about_btn_github: "GitHub",
+    about_license: "MIT License",
+    about_disclaimer_title: "Terms & Conditions / Disclaimer",
+    about_disclaimer_text: "Provided 'as is' without warranty of any kind, express or implied. In no event shall aiVOLUTION or the authors be liable for any claim, damages, or other liability resulting from the use of this software.",
 };
 
 const STRINGS_DA: Strings = Strings {
@@ -229,6 +247,14 @@ const STRINGS_DA: Strings = Strings {
     move_config_btn: "Flyt konfigurationsfil\u{2026}",
     move_config_tooltip: "Flyt konfigurationsfilen til en ny mappe (fx en cloud-synkroniseret mappe for at dele indstillinger p\u{00E5} tv\u{00E6}rs af computere)",
     mode_portable_tooltip: "Appen k\u{00F8}rer i Portabel tilstand og du kan ikke ændre mappen, hvor konfigurationsfilen gemmes. For at gemme konfigurationsfilen i en cloud-synkroniseret mappe skal du installere appen med installationsprogrammet.",
+    tab_about: "\u{2139} Om",
+    about_tagline: "Hurtig og let native Windows tekstudvider og produktivitetsv\u{00E6}rkt\u{00F8}j",
+    about_developed_by: "Udviklet af",
+    about_btn_website: "Hjemmeside",
+    about_btn_github: "GitHub",
+    about_license: "MIT-licens",
+    about_disclaimer_title: "Vilk\u{00E5}r & Betingelser / Ansvarsfraskrivelse",
+    about_disclaimer_text: "Leveres 'som den er og forefindes' uden nogen form for garanti, hverken udtrykkelig eller stiltiende. Under ingen omst\u{00E6}ndigheder kan aiVOLUTION eller forfatterne drages til ansvar for eventuelle krav, skader eller andet ansvar som f\u{00F8}lge af brugen af denne software.",
 };
 
 #[cfg(test)]
@@ -295,6 +321,14 @@ mod tests {
         assert!(!s.move_config_btn.is_empty(), "move_config_btn empty for {lang}");
         assert!(!s.move_config_tooltip.is_empty(), "move_config_tooltip empty for {lang}");
         assert!(!s.mode_portable_tooltip.is_empty(), "mode_portable_tooltip empty for {lang}");
+        assert!(!s.tab_about.is_empty(), "tab_about empty for {lang}");
+        assert!(!s.about_tagline.is_empty(), "about_tagline empty for {lang}");
+        assert!(!s.about_developed_by.is_empty(), "about_developed_by empty for {lang}");
+        assert!(!s.about_btn_website.is_empty(), "about_btn_website empty for {lang}");
+        assert!(!s.about_btn_github.is_empty(), "about_btn_github empty for {lang}");
+        assert!(!s.about_license.is_empty(), "about_license empty for {lang}");
+        assert!(!s.about_disclaimer_title.is_empty(), "about_disclaimer_title empty for {lang}");
+        assert!(!s.about_disclaimer_text.is_empty(), "about_disclaimer_text empty for {lang}");
     }
 
     #[test]
@@ -327,6 +361,27 @@ mod tests {
         assert!(da.btn_cancel_tooltip.contains('æ'), "Expected æ in btn_cancel_tooltip");
         assert!(da.btn_add.contains('ø'), "Expected ø in btn_add");
         assert!(da.quick_switch_tooltip.contains('Å'), "Expected Å in quick_switch_tooltip");
+        assert!(da.about_tagline.contains('æ'), "Expected æ in about_tagline");
+        assert!(da.about_disclaimer_title.contains('å'), "Expected å in about_disclaimer_title");
+    }
+
+    #[test]
+    fn test_about_tab_strings_content() {
+        let en = get_strings("en");
+        assert!(en.tab_about.contains("About"));
+        assert_eq!(en.about_btn_website, "Website");
+        assert_eq!(en.about_btn_github, "GitHub");
+        assert_eq!(en.about_license, "MIT License");
+        assert!(en.about_disclaimer_text.contains("aiVOLUTION"));
+        assert!(en.about_disclaimer_text.contains("without warranty"));
+
+        let da = get_strings("da");
+        assert!(da.tab_about.contains("Om"));
+        assert_eq!(da.about_btn_website, "Hjemmeside");
+        assert_eq!(da.about_btn_github, "GitHub");
+        assert_eq!(da.about_license, "MIT-licens");
+        assert!(da.about_disclaimer_text.contains("aiVOLUTION"));
+        assert!(da.about_disclaimer_text.contains("uden nogen form for garanti"));
     }
 }
 

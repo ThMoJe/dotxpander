@@ -44,7 +44,7 @@ export component ConfigWindow inherits Window {
     default-font-size: 14px;
     background: #1e1e2e;
     
-    // Active tab: 0 = General, 1 = Snippets
+    // Active tab: 0 = General, 1 = Snippets, 2 = About
     in-out property <int> active-tab: 0;
 
     // Properties bound from Rust
@@ -107,6 +107,17 @@ export component ConfigWindow inherits Window {
     in-out property <string> i18n-move-config: "";
     in-out property <string> i18n-mode-portable-tooltip: "";
     
+    // About tab properties
+    in-out property <string> i18n-tab-about: "";
+    in-out property <string> about-version-arch: "";
+    in-out property <string> i18n-about-tagline: "";
+    in-out property <string> i18n-about-developed-by: "";
+    in-out property <string> i18n-about-btn-website: "";
+    in-out property <string> i18n-about-btn-github: "";
+    in-out property <string> i18n-about-license: "";
+    in-out property <string> i18n-about-disclaimer-title: "";
+    in-out property <string> i18n-about-disclaimer-text: "";
+    
     // Callbacks to Rust
     callback save-config();
     callback cancel-config();
@@ -127,6 +138,9 @@ export component ConfigWindow inherits Window {
     callback case-changer-hotkey-clicked();
     callback case-changer-key-recorded(string, bool, bool, bool, bool) -> bool;
     callback save-case-changer-hotkey();
+    callback open-website();
+    callback open-github();
+    callback open-license();
     
     // Full-window Rectangle ensures the dark background always fills the window,
     // even after hide/show cycles where Window.background may not redraw correctly.
@@ -255,6 +269,39 @@ export component ConfigWindow inherits Window {
                     Rectangle {
                         height: 3px;
                         background: active-tab == 1 ? #89b4fa : transparent;
+                        border-radius: 1.5px;
+                    }
+                }
+            }
+
+            // About tab
+            Rectangle {
+                min-width: 130px;
+                background: transparent;
+
+                tab-about-touch := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => { root.active-tab = 2; }
+                }
+
+                VerticalLayout {
+                    spacing: 0px;
+                    padding: 0px;
+
+                    Text {
+                        text: i18n-tab-about;
+                        color: active-tab == 2 ? #cdd6f4 : (tab-about-touch.has-hover ? #a6adc8 : #6c7086);
+                        font-weight: active-tab == 2 ? 700 : 400;
+                        font-size: 14px;
+                        vertical-alignment: center;
+                        horizontal-alignment: center;
+                        vertical-stretch: 1;
+                    }
+
+                    // Active underline
+                    Rectangle {
+                        height: 3px;
+                        background: active-tab == 2 ? #89b4fa : transparent;
                         border-radius: 1.5px;
                     }
                 }
@@ -1223,6 +1270,231 @@ export component ConfigWindow inherits Window {
                 }
             }
         } // if active-tab == 1
+
+        // ── ABOUT TAB ────────────────────────────────────────────────────────
+        if active-tab == 2 : VerticalLayout {
+            spacing: 12px;
+            vertical-stretch: 1;
+            padding: 0px;
+
+            // Card 1: Branding Header (Icon + Name + Version Badge + Tagline)
+            Rectangle {
+                border-width: 1px;
+                border-color: #313244;
+                border-radius: 8px;
+                background: #181825;
+                vertical-stretch: 0;
+
+                HorizontalLayout {
+                    padding: 16px;
+                    spacing: 16px;
+                    alignment: start;
+
+                    // App Icon
+                    Image {
+                        source: @image-url("icon.png");
+                        width: 52px;
+                        height: 52px;
+                    }
+
+                    VerticalLayout {
+                        spacing: 4px;
+                        alignment: center;
+
+                        // Title + Version/Arch Pill
+                        HorizontalLayout {
+                            spacing: 10px;
+                            alignment: start;
+
+                            Text {
+                                text: "dotXPANDER";
+                                font-size: 20px;
+                                font-weight: 800;
+                                color: #cdd6f4;
+                                vertical-alignment: center;
+                            }
+
+                            // Version & Arch Badge
+                            Rectangle {
+                                border-radius: 10px;
+                                background: #313244;
+                                border-width: 1px;
+                                border-color: #45475a;
+                                height: 22px;
+
+                                HorizontalLayout {
+                                    padding-left: 8px;
+                                    padding-right: 8px;
+
+                                    Text {
+                                        text: about-version-arch;
+                                        font-size: 11px;
+                                        font-weight: 600;
+                                        color: #89b4fa;
+                                        vertical-alignment: center;
+                                    }
+                                }
+                            }
+                        }
+
+                        // Localized Tagline
+                        Text {
+                            text: i18n-about-tagline;
+                            font-size: 13px;
+                            color: #a6adc8;
+                            vertical-alignment: center;
+                        }
+
+                        // Developer credits
+                        Text {
+                            text: i18n-about-developed-by;
+                            font-size: 12px;
+                            color: #6c7086;
+                            vertical-alignment: center;
+                        }
+                    }
+                }
+            }
+
+            // Card 2: Actions & Links Row
+            Rectangle {
+                border-width: 1px;
+                border-color: #313244;
+                border-radius: 8px;
+                background: #181825;
+                vertical-stretch: 0;
+
+                HorizontalLayout {
+                    padding: 12px;
+                    spacing: 12px;
+                    alignment: start;
+
+                    // Website button
+                    Rectangle {
+                        border-width: 1px;
+                        border-color: web-touch.has-hover ? #89b4fa : #45475a;
+                        border-radius: 6px;
+                        background: web-touch.has-hover ? #313244 : #1e1e2e;
+                        height: 32px;
+                        min-width: 130px;
+
+                        web-touch := TouchArea {
+                            mouse-cursor: pointer;
+                            clicked => { open-website(); }
+                        }
+
+                        HorizontalLayout {
+                            padding-left: 12px;
+                            padding-right: 12px;
+                            spacing: 6px;
+                            alignment: center;
+
+                            Text {
+                                text: "🌐 " + i18n-about-btn-website;
+                                color: web-touch.has-hover ? #cdd6f4 : #bac2de;
+                                font-size: 12px;
+                                font-weight: 600;
+                                vertical-alignment: center;
+                            }
+                        }
+                    }
+
+                    // GitHub button
+                    Rectangle {
+                        border-width: 1px;
+                        border-color: gh-touch.has-hover ? #89b4fa : #45475a;
+                        border-radius: 6px;
+                        background: gh-touch.has-hover ? #313244 : #1e1e2e;
+                        height: 32px;
+                        min-width: 110px;
+
+                        gh-touch := TouchArea {
+                            mouse-cursor: pointer;
+                            clicked => { open-github(); }
+                        }
+
+                        HorizontalLayout {
+                            padding-left: 12px;
+                            padding-right: 12px;
+                            spacing: 6px;
+                            alignment: center;
+
+                            Text {
+                                text: "🐙 " + i18n-about-btn-github;
+                                color: gh-touch.has-hover ? #cdd6f4 : #bac2de;
+                                font-size: 12px;
+                                font-weight: 600;
+                                vertical-alignment: center;
+                            }
+                        }
+                    }
+
+                    // MIT License Button
+                    Rectangle {
+                        border-width: 1px;
+                        border-color: lic-touch.has-hover ? #89b4fa : #45475a;
+                        border-radius: 6px;
+                        background: lic-touch.has-hover ? #313244 : #1e1e2e;
+                        height: 32px;
+
+                        lic-touch := TouchArea {
+                            mouse-cursor: pointer;
+                            clicked => { open-license(); }
+                        }
+
+                        HorizontalLayout {
+                            padding-left: 12px;
+                            padding-right: 12px;
+                            spacing: 6px;
+                            alignment: center;
+
+                            Text {
+                                text: "⚖ " + i18n-about-license;
+                                color: lic-touch.has-hover ? #cdd6f4 : #bac2de;
+                                font-size: 12px;
+                                font-weight: 600;
+                                vertical-alignment: center;
+                            }
+                        }
+                    }
+
+                    Rectangle { horizontal-stretch: 1; }
+                }
+            }
+
+            // Card 3: Terms & Conditions / Liability Disclaimer
+            Rectangle {
+                border-width: 1px;
+                border-color: #313244;
+                border-radius: 8px;
+                background: #181825;
+                vertical-stretch: 1;
+
+                VerticalLayout {
+                    padding: 14px;
+                    spacing: 8px;
+
+                    HorizontalLayout {
+                        spacing: 8px;
+                        Text {
+                            text: "🛡 " + i18n-about-disclaimer-title;
+                            font-size: 12px;
+                            font-weight: 700;
+                            color: #cdd6f4;
+                            vertical-alignment: center;
+                        }
+                    }
+
+                    Text {
+                        text: i18n-about-disclaimer-text;
+                        font-size: 11px;
+                        color: #9399b2;
+                        wrap: word-wrap;
+                        vertical-alignment: top;
+                    }
+                }
+            }
+        } // if active-tab == 2
 
         // ── Global bottom button bar (always visible) ─────────────────────────
         Rectangle { height: 1px; background: #45475a; vertical-stretch: 0; }
