@@ -1,6 +1,16 @@
 [target.aarch64-pc-windows-msvc]
-rustflags = ["-Ctarget-feature=+crt-static"]
+rustflags = [
+    "-Ctarget-feature=+crt-static",
+    "-Clink-arg=/OPT:REF",
+    "-Clink-arg=/OPT:ICF",
+    "-Clink-arg=/FILEALIGN:512",
+]
 
 [target.x86_64-pc-windows-msvc]
-rustflags = ["-Ctarget-feature=+crt-static"]
+rustflags = [
+    "-Ctarget-feature=+crt-static",
+    "-Clink-arg=/OPT:REF",
+    "-Clink-arg=/OPT:ICF",
+    "-Clink-arg=/FILEALIGN:512",
+]
 

@@ -54,8 +54,16 @@ flowchart TD
 **`ui/icon.ico`** — Application icon converted from `ui/icon.png` for use in installer and executable.
 
 **`.github/workflows/release.yml`** — Updated CI/CD pipeline:
+- Builds release binaries with Rust Nightly + `build-std` (`-Z build-std=std,panic_abort`) across both `arm64` and `x64`.
+- Compresses x64 binary with UPX (`upx --best --lzma`) down to ~3.3 MB (ARM64 remains native as UPX does not support Windows ARM64 PE).
 - Runs `iscc` (Inno Setup Compiler) for both `arm64` and `x64` builds.
 - Uploads `dotXPANDER-Setup-arm64.exe` and `dotXPANDER-Setup-x64.exe` to GitHub Releases alongside portable ZIPs and SHA-256 checksums.
+
+**Binary Size & Link-Time Optimizations (B1 & B2)**:
+- **`build-std` (B1)**: Recompiles `core`, `alloc`, and `std` from source with release profile flags (`opt-level = "z"`, `strip = true`, `panic = "abort"`), stripping unused standard library code on all architectures.
+- **MSVC Linker Flags**: Enabled `/OPT:REF` (dead code elimination), `/OPT:ICF` (COMDAT folding), and `/FILEALIGN:512` (512-byte section alignment) in `.cargo/config.toml`.
+- **UPX Compression (B2)**: Tested and integrated for x64 release packaging, dropping binary size by ~58% (from 7.77 MB down to 3.28 MB).
+- **`scripts/build-release.ps1`**: Standalone helper script for one-command local release building with toolchain checks, `build-std`, and conditional UPX packing.
 
 **`Cargo.toml`** — Added `Win32_System_Registry` feature to the `windows` crate, required for the upcoming config location feature in Rust code.
 
