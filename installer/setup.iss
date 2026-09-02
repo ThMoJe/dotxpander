@@ -23,6 +23,7 @@ PrivilegesRequired=lowest
 OutputDir=..\dist_installers
 OutputBaseFilename=dotXPANDER-Setup-{#MyAppArchitecture}
 SetupIconFile=..\ui\icon.ico
+WizardSmallImageFile=wizard_small.bmp
 UninstallDisplayIcon={app}\icon.ico
 Compression=lzma
 SolidCompression=yes
@@ -55,7 +56,7 @@ Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: 
 Root: HKCU; Subkey: "Software\aiVOLUTION\dotXPANDER"; ValueType: string; ValueName: "ConfigPath"; ValueData: "{code:GetConfigDir}"; Flags: uninsdeletekey
 
 [Run]
-Filename: "{app}\dotxpander.exe"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\dotxpander.exe"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent; WorkingDir: "{app}"
 
 [Code]
 // ---------------------------------------------------------------------------
@@ -91,10 +92,11 @@ begin
     wpSelectDir,   // Insert after the "Destination" page
     'Choose Settings Location',
     'Where should dotXPANDER store your settings and snippets?',
-    'Pick a folder for your configuration file. ' +
+    'Pick a folder for your configuration file.' +
+    Chr(13) + Chr(10) + Chr(13) + Chr(10) +
     'Hint: choose a cloud-synced folder (e.g., OneDrive, Dropbox) to share ' +
     'your snippets and settings across multiple computers automatically.' +
-    Chr(13) + Chr(10) +
+    Chr(13) + Chr(10) + Chr(13) + Chr(10) +
     'Leave as default if you only use one computer.',
     False,   // Do not append the app name to the path
     ''       // No subfolder hint

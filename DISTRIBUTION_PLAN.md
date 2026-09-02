@@ -41,17 +41,19 @@ flowchart TD
 ### What was implemented
 
 **`installer/setup.iss`** — Full Inno Setup script:
-- Per-user installation to `{localappdata}\Programs\dotXPANDER` — no UAC prompt required.
+- Per-user installation to `{localappdata}\Programs\aiVOLUTION\dotXPANDER` — no UAC prompt required.
 - Start Menu shortcut created automatically.
 - Optional Desktop shortcut (unchecked by default).
 - Optional autostart at Windows login via `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` (checked by default).
 - Registered in *Windows Settings → Apps → Installed apps* for clean uninstallation.
-- **Custom wizard page** — asks the user where to store `config.toml` before installation completes. Default: `%APPDATA%\dotXPANDER`. Includes a hint to pick a cloud-synced folder (OneDrive, Dropbox, etc.) to share snippets across multiple computers.
-- Chosen config directory written to registry: `HKCU\Software\dotXPANDER\ConfigPath`.
-- **Smart uninstall logic** — only deletes config files if they are in the default `%APPDATA%` location. Custom/cloud-synced paths are left intact.
+- **Custom wizard page** — asks the user where to store `config.toml` before installation completes. Default: `%APPDATA%\aiVOLUTION\dotXPANDER`. Includes a hint to pick a cloud-synced folder (OneDrive, Dropbox, etc.) to share snippets across multiple computers.
+- Chosen config directory written to registry: `HKCU\Software\aiVOLUTION\dotXPANDER\ConfigPath`.
+- **Smart uninstall logic** — only deletes config files if they are in the default `%APPDATA%\aiVOLUTION\dotXPANDER` location. Custom/cloud-synced paths are left intact.
 - Default `config.toml` written to the chosen location on install, but only if one does not already exist (preserves existing snippets from another machine).
 
 **`ui/icon.ico`** — Application icon converted from `ui/icon.png` for use in installer and executable.
+**`installer/wizard_small.bmp`** — Branded 55×58 header logo for Inno Setup wizard pages (`WizardSmallImageFile`).
+
 
 **`.github/workflows/release.yml`** — Updated CI/CD pipeline:
 - Builds release binaries with Rust Nightly + `build-std` (`-Z build-std=std,panic_abort`) across both `arm64` and `x64`.
@@ -67,15 +69,13 @@ flowchart TD
 
 **`Cargo.toml`** — Added `Win32_System_Registry` feature to the `windows` crate, required for the upcoming config location feature in Rust code.
 
-### Still pending (Phase 1 follow-up)
+### Implemented (Phase 1 Follow-up) ✅ Complete
 
-The following items were designed as part of Phase 1 but have not yet been implemented in Rust/Slint:
+The following runtime and UI features designed as part of Phase 1 are fully implemented in Rust/Slint:
 
-- **`src/config.rs`** — Registry-based config discovery (`resolve_config_dir`, `is_portable`, `move_config_dir`, `update_config_registry`). Currently the app still reads config from the hardcoded `%APPDATA%\dotXPANDER` path regardless of the registry key set by the installer.
+- **`src/config.rs`** — Registry-based config discovery (`resolve_config_dir`, `is_portable`, `move_config_dir`, `update_config_registry`). Reads `HKCU\Software\aiVOLUTION\dotXPANDER\ConfigPath` from the registry with automatic fallback to portable mode (config next to executable) or default `%APPDATA%\aiVOLUTION\dotXPANDER`.
 - **`src/ui.rs`** — `move-config-folder` callback and `is-portable` property binding.
 - **`ui/main.slint`** — Mode badge ("📦 Portable" / "💿 Installed") and "Move Config File…" button on the General tab.
-
-> **Note:** The registry key `HKCU\Software\dotXPANDER\ConfigPath` is already written by the installer, but the Rust app does not read it yet. The Rust-side implementation is documented in [`implementation_plan.md`](C:/Users/thmj/.gemini/antigravity/brain/b242c50a-7301-46a5-8f83-766ea27f2c58/implementation_plan.md) and is ready to be executed.
 
 ---
 
