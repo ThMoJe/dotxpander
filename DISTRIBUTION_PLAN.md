@@ -53,6 +53,8 @@ flowchart TD
 
 **`ui/icon.ico`** — Application icon converted from `ui/icon.png` for use in installer and executable.
 **`installer/wizard_small.bmp`** — Branded 55×58 header logo for Inno Setup wizard pages (`WizardSmallImageFile`).
+**`installer/wizard_large.bmp`** — Branded 164×314 sidebar banner for Welcome and Finish wizard pages (`WizardImageFile`).
+
 
 
 **`.github/workflows/release.yml`** — Updated CI/CD pipeline:
