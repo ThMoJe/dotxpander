@@ -102,6 +102,26 @@ Download `dotXPANDER-x64.zip` (or `-arm64`) and extract the executable anywhere 
 - `config.toml` is read from and saved to the same directory as `dotxpander.exe`.
 - Nothing is written to the Windows Registry.
 
+### Option C: Silent / Enterprise Installation
+
+For automated deployment (Winget, MDM, Group Policy, or CI scripts), the installer supports standard Inno Setup silent flags:
+
+```powershell
+# Fully silent — no UI, no reboot prompt
+dotXPANDER-Setup-x64.exe /VERYSILENT /NORESTART /ALLUSERS=0
+
+# Silent with progress bar visible
+dotXPANDER-Setup-x64.exe /SILENT /NORESTART
+
+# Override config directory (e.g., a network share)
+dotXPANDER-Setup-x64.exe /VERYSILENT /NORESTART /ALLUSERS=0
+
+# Silent uninstall (after locating the uninstaller)
+"%LOCALAPPDATA%\Programs\aiVOLUTION\dotXPANDER\unins000.exe" /VERYSILENT /NORESTART
+```
+
+> **Note:** `/ALLUSERS=0` explicitly installs per-user (to `%LOCALAPPDATA%`), which requires no UAC prompt. This is the only supported mode — system-wide installation is not supported.
+
 ---
 
 ## Configuration

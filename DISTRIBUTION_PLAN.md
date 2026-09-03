@@ -50,6 +50,11 @@ flowchart TD
 - Chosen config directory written to registry: `HKCU\Software\aiVOLUTION\dotXPANDER\ConfigPath`.
 - **Smart uninstall logic** — only deletes config files if they are in the default `%APPDATA%\aiVOLUTION\dotXPANDER` location. Custom/cloud-synced paths are left intact.
 - Default `config.toml` written to the chosen location on install, but only if one does not already exist (preserves existing snippets from another machine).
+- **`MinVersion=10.0.17763`** — Blocks installation on Windows 7/8/8.1; minimum supported OS is Windows 10 1809.
+- **`AppMutex=Global\dotXPANDERSingleton`** — Detects a running instance and prompts the user to close it before upgrading (matches the Win32 mutex in `main.rs`).
+- **`CloseApplications=yes` / `RestartApplications=yes`** — Offers to gracefully close dotXPANDER during install/upgrade and optionally restart it afterward.
+- **`LicenseFile=..\LICENSE`** — Displays the MIT license agreement page in the installer wizard.
+- **Downgrade guard** (`InitializeSetup()` Pascal code) — Reads the installed version from the Uninstall registry key and warns the user if they attempt to install an older version over a newer one.
 
 **`ui/icon.ico`** — Application icon converted from `ui/icon.png` for use in installer and executable.
 **`installer/wizard_small.bmp`** — Branded 55×58 header logo for Inno Setup wizard pages (`WizardSmallImageFile`).
@@ -69,7 +74,25 @@ flowchart TD
 - **UPX Compression (B2)**: Tested and integrated for x64 release packaging, dropping binary size by ~58% (from 7.77 MB down to 3.28 MB).
 - **`scripts/build-release.ps1`**: Standalone helper script for one-command local release building with toolchain checks, `build-std`, and conditional UPX packing.
 
-**`Cargo.toml`** — Added `Win32_System_Registry` feature to the `windows` crate, required for the upcoming config location feature in Rust code.
+**`Cargo.toml`** — Added `Win32_System_Registry` feature to the `windows` crate, required for the registry config location feature.
+
+**Win32 Executable Resources** (Phase 1 hardening):
+- **`build.rs`** — Updated to use the `winresource` crate to embed into the `.exe`:
+  - `VERSIONINFO` string table: `FileDescription`, `ProductName`, `CompanyName`, `LegalCopyright`, `FileVersion`, `ProductVersion`, `InternalName`, `OriginalFilename` — shows in **File Explorer → Properties → Details** and Windows Task Manager.
+  - Application icon embedded directly in the binary — shown in File Explorer, Alt+Tab, and taskbar (not just installer-side).
+  - Application manifest embedded via `app.manifest`.
+- **`app.manifest`** — Windows application manifest declaring:
+  - **DPI awareness**: `PerMonitorV2` (prevents blurry scaling on HiDPI / multi-monitor setups).
+  - **UAC**: `asInvoker` — formally declares the app never requests elevation.
+  - **Supported OS**: Windows 10 and Windows 11 GUIDs — unlocks modern Windows API behaviours.
+  - **Long path awareness** — supports paths exceeding 260 characters.
+  - **UTF-8 active code page** — correct Unicode string handling system-wide.
+  - **Segment Heap** — reduces memory fragmentation for long-running background apps.
+  - **Common Controls v6** — enables Windows visual styles.
+
+**`.gitignore`** — Added `/dist_installers` to prevent built Inno Setup `.exe` files from being accidentally committed.
+
+**`README.md`** — Added **Option C: Silent / Enterprise Installation** section documenting Inno Setup silent flags (`/VERYSILENT`, `/SILENT`, `/NORESTART`, `/ALLUSERS=0`) for sysadmin and Winget deployment scenarios.
 
 ### Implemented (Phase 1 Follow-up) ✅ Complete
 

@@ -1,4 +1,5 @@
 /target
+/dist_installers
 
 # IDE & OS files
 .idea/

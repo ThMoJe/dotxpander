@@ -66,6 +66,8 @@ unicode-segmentation = "1"
 
 [build-dependencies]
 slint-build = "1.17"
+# Embeds Win32 VERSIONINFO, icon, and application manifest into the .exe
+winresource = "0.1"
 
 # Optimized for a background utility: smallest binary, lowest idle memory footprint.
 # Mandatory settings per dotxpander-binary-optimizer skill.

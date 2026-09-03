@@ -32,6 +32,16 @@ SolidCompression=yes
 WizardStyle=modern
 ArchitecturesAllowed={#MyAppArchitecture}
 ArchitecturesInstallIn64BitMode={#MyAppArchitecture}
+; Minimum supported OS: Windows 10 1809 (build 17763)
+MinVersion=10.0.17763
+; Detect a running instance and offer to close it before upgrading
+; Must match the mutex name used in main.rs: Global\dotXPANDERSingleton
+AppMutex=Global\dotXPANDERSingleton
+; Offer to close any running dotXPANDER process during install/upgrade
+CloseApplications=yes
+RestartApplications=yes
+; Display the MIT license agreement in the installer wizard
+LicenseFile=..\LICENSE
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -74,6 +84,43 @@ Filename: "{app}\dotxpander.exe"; Description: "{cm:LaunchProgram,{#StringChange
 
 var
   ConfigDirPage: TInputDirWizardPage;
+
+// ---------------------------------------------------------------------------
+// Downgrade guard — warn user if they are installing an older version over a
+// newer one. Reads the currently installed version from the Uninstall registry
+// key that Inno Setup writes on every install.
+// ---------------------------------------------------------------------------
+function IsDowngrade(): Boolean;
+var
+  InstalledVer: String;
+begin
+  Result := False;
+  // Inno Setup writes the current version to this subkey during install.
+  if RegQueryStringValue(HKCU,
+    'Software\Microsoft\Windows\CurrentVersion\Uninstall\{ACFE89A0-7A1E-4E92-95FD-A4E5D477324B}_is1',
+    'DisplayVersion', InstalledVer) then
+  begin
+    // A simple string comparison works for SemVer as long as segment counts
+    // and zero-padding are consistent (e.g. "0.2.0" vs "0.1.0").
+    if CompareStr(InstalledVer, '{#MyAppVersion}') > 0 then
+      Result := True;
+  end;
+end;
+
+function InitializeSetup(): Boolean;
+var
+  Msg: String;
+begin
+  Result := True;
+  if IsDowngrade() then
+  begin
+    Msg := 'A newer version of ' + '{#MyAppName}' + ' is already installed.' + #13#10 +
+           #13#10 +
+           'Installing this older version may cause issues.' + #13#10 +
+           'Are you sure you want to continue?';
+    Result := MsgBox(Msg, mbConfirmation, MB_YESNO) = IDYES;
+  end;
+end;
 
 // Called by the [Registry] section to retrieve the chosen directory.
 function GetConfigDir(Param: String): String;
