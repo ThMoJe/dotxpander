@@ -1,4 +1,5 @@
-#define MyAppName "dotXPANDER"
+#define MyAppName    "dotXPANDER"
+#define MyAppDisplay ".XPANDER"
 #define MyAppVersion "0.2.0"
 #define MyAppPublisher "aiVOLUTION"
 #define MyAppURL "https://github.com/ThMoJe/dotxpander"
@@ -47,7 +48,7 @@ LicenseFile=..\LICENSE
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
-Name: "autostart"; Description: "Start dotXPANDER automatically when Windows starts"; GroupDescription: "Autostart:"
+Name: "autostart"; Description: "Start {#MyAppDisplay} automatically when Windows starts"; GroupDescription: "Autostart:"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
@@ -55,8 +56,8 @@ Source: "{#MyAppExePath}"; DestDir: "{app}"; DestName: "dotxpander.exe"; Flags: 
 Source: "..\ui\icon.ico"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
-Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\dotxpander.exe"; IconFilename: "{app}\icon.ico"; AppUserModelID: "aiVOLUTION.dotXPANDER"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\dotxpander.exe"; Tasks: desktopicon; IconFilename: "{app}\icon.ico"; AppUserModelID: "aiVOLUTION.dotXPANDER"
+Name: "{autoprograms}\{#MyAppDisplay}"; Filename: "{app}\dotxpander.exe"; IconFilename: "{app}\icon.ico"; AppUserModelID: "aiVOLUTION.dotXPANDER"
+Name: "{autodesktop}\{#MyAppDisplay}"; Filename: "{app}\dotxpander.exe"; Tasks: desktopicon; IconFilename: "{app}\icon.ico"; AppUserModelID: "aiVOLUTION.dotXPANDER"
 
 [Registry]
 ; Autostart registry entry (only created when the "autostart" task is selected)
@@ -114,7 +115,7 @@ begin
   Result := True;
   if IsDowngrade() then
   begin
-    Msg := 'A newer version of ' + '{#MyAppName}' + ' is already installed.' + Chr(13) + Chr(10) +
+    Msg := 'A newer version of ' + '{#MyAppDisplay}' + ' is already installed.' + Chr(13) + Chr(10) +
            Chr(13) + Chr(10) +
            'Installing this older version may cause issues.' + Chr(13) + Chr(10) +
            'Are you sure you want to continue?';
@@ -140,7 +141,7 @@ begin
   ConfigDirPage := CreateInputDirPage(
     wpSelectDir,   // Insert after the "Destination" page
     'Choose Settings Location',
-    'Where should dotXPANDER store your settings and snippets?',
+    'Where should {#MyAppDisplay} store your settings and snippets?',
     'Pick a folder for your configuration file.' +
     Chr(13) + Chr(10) + Chr(13) + Chr(10) +
     'Hint: choose a cloud-synced folder (e.g., OneDrive, Dropbox) to share ' +
