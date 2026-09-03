@@ -1,37 +1,53 @@
-# Pre-Release Roadmap
+# dotXPANDER Roadmap
 
-Internal tracking document for features and improvements planned prior to the public release, after which public issue tracking and community feedback will move to GitHub.
-
----
-
-## High Priority
-
-### 1. Inno Setup Install Wizard Review & Polish
-Review the current installer wizard flow (`installer/setup.iss`) to identify UX friction and technical gaps.
-- Verify per-user and autostart registration behavior across clean Windows installs.
-- Test custom config directory selection and ensure fallback paths gracefully handle non-standard setups.
-- Streamline wizard text, step ordering, and default choices for first-time users.
-
-### 2. Filename-Safe Text Transformations in Case/Space Changer
-Extend `case_changer.rs` and `text_utils.rs` with menu actions that sanitize selected text into valid, filesystem-safe filenames (stripping Win32 reserved characters: `< > : " / \ | ? *` and control codes).
-- **Clean Characters Only**: Remove illegal characters while keeping valid letters, numbers, spaces, and punctuation intact.
-- **Clean + Underscore**: Remove illegal characters and convert all whitespace sequences into single underscores (`_`).
-- **Clean + Hyphen**: Remove illegal characters and convert all whitespace sequences into single hyphens (`-`).
-
-### 3. Code Signing (Authenticode)
-Acquire an OV or EV Code Signing Certificate and integrate it into the GitHub Actions pipeline (`release.yml`) to sign the installer and executable, preventing Windows Defender SmartScreen warnings.
+Project roadmap and milestone tracking for **dotXPANDER** by **aiVOLUTION**.
 
 ---
 
-## Medium Priority
+## ✅ Completed Milestones (v0.2.0 Release)
 
-### 3. Rebranding: "dot eXpander" (.XPANDER) & aiVOLUTION
-Transition project naming and branding across the repository, UI, installer, and deployment assets.
-- **Assets & App Identity**: Update application titles, window headers, system tray tooltips, and iconography with new `.XPANDER` / "dot eXpander" visual assets.
-- **Organization Branding**: Incorporate aiVOLUTION publisher branding into metadata, installer details, and documentation.
-- **Repository & Distribution**: Rename GitHub repository paths and update references in `Cargo.toml`, CI/CD workflows (`.github/workflows/release.yml`), and binary output filenames.
+### 1. Inno Setup Install Wizard & Dual-Mode Uninstall ✅
+- Full Inno Setup script (`installer/setup.iss`) with per-user installation (`%LOCALAPPDATA%\Programs\aiVOLUTION\dotXPANDER`), no UAC requirement.
+- Branded wizard artwork (`wizard_small.bmp` and `wizard_large.bmp`).
+- Custom config location page with cloud sync preservation.
+- **Smart Dual-Mode Uninstall**: Detects `unins000.exe` when installed to invoke official uninstaller (cleaning up Start Menu shortcuts, Autostart keys, and registry entries), while retaining delayed `del /f /q` self-deletion for portable mode.
+- Downgrade prevention guard, running-instance detection (`AppMutex`), and silent install flags (`/VERYSILENT`).
 
-### 4. About Tab in Settings Window
-Add a minimal "About" tab to the Slint configuration window (`ui/main.slint` and `src/ui.rs`).
-- Display current version, target architecture (ARM64 vs. x86_64), and build information.
-- Provide direct, clickable external links to the GitHub repository, release notes, license, and upcoming Microsoft Store listing.
+### 2. Windows Filename-Safe Text Transformations ✅
+- Added 3 Win32 filesystem-safe text transformations to the `Ctrl + CapsLock` Case & Space Changer:
+  - **Clean Windows Filename**: Strips illegal characters (`< > : " / \ | ? *`), control codes, trims leading/trailing spaces and dots, and clamps length to 255 bytes while preserving international Unicode characters (Danish, etc.).
+  - **Clean Windows Filename (Underscores)**: Sanitizes illegal characters and replaces whitespace sequences with `_`.
+  - **Clean Windows Filename (Dashes)**: Sanitizes illegal characters and replaces whitespace sequences with `-`.
+
+### 3. Rebranding: dotXPANDER & aiVOLUTION ✅
+- Transitioned identity to **dotXPANDER** by **aiVOLUTION** across the codebase, Slint UI, VERSIONINFO string table, application manifest, and CI/CD workflows.
+
+### 4. About Tab in Settings Window ✅
+- Integrated dedicated About tab in `ui/main.slint` displaying live version, CPU target architecture (ARM64 vs. x64), author credits, and interactive links to repository and license.
+
+### 5. High-DPI Cursor Centering & Window Stability ✅
+- Implemented cursor-aware monitor work-area centering for multi-monitor setups.
+- Stabilized Slint layout constraint envelopes (`min-width`, `preferred-width`) to guarantee rock-solid window dimensions during tab navigation.
+
+---
+
+## 🚀 Upcoming Milestones (Post-v0.2.0)
+
+### Phase 2: Winget Package Distribution
+- Submit package manifest to [microsoft/winget-pkgs](https://github.com/microsoft/winget-pkgs) for one-command installation:
+  ```powershell
+  winget install dotXPANDER
+  ```
+- Automate future winget release submissions via GitHub Actions (`winget-releaser`).
+
+### Phase 3: Code Signing (Authenticode)
+- Acquire and integrate an OV/EV Code Signing Certificate into `.github/workflows/release.yml` to sign binaries and installers, eliminating Windows Defender SmartScreen warnings.
+
+### Phase 4: Microsoft Store (MSIX Packaging)
+- Configure MSIX packaging via Windows SDK / Partner Center.
+- Package for Microsoft Store distribution under the Productivity & Accessibility categories.
+
+### Phase 5: Feature Enhancements
+- **Dynamic Snippet Variables**: Support date/time macros (e.g. `{date}`, `{time}`, `{clipboard}`) and cursor repositioning tokens (`{cursor}`) in snippet expansion text.
+- **Snippet Search & Filtering**: Real-time search/filter bar in the Slint Snippets tab for large snippet collections.
+- **Import / Export**: JSON/CSV snippet library import and export functionality in the Settings UI.

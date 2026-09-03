@@ -34,6 +34,10 @@ Unlike electron-based expanders, dotXPANDER runs as a single, highly optimized n
 Select text in any application and press `Ctrl + CapsLock` to transform the selection:
 - **Case conversion**: UPPERCASE, lowercase, Title Case, Sentence case, lowerCamelCase, PascalCase.
 - **Whitespace utilities**: Remove extra spaces, convert spaces to dashes (`kebab-case`), or convert spaces to underscores (`snake_case`).
+- **Windows Filename Sanitization**: Clean selected text for safe Win32 filenames (stripping forbidden `< > : " / \ | ? *` characters and control codes, trimming dots/spaces, and clamping length to 255 bytes while preserving international Unicode characters):
+  - Clean characters only
+  - Clean + Underscores
+  - Clean + Dashes
 - **Linebreak normalization**: Convert mixed line endings to standard Windows CRLF (`\r\n`).
 - Uses `unicode-segmentation` for grapheme-aware boundary detection.
 
@@ -145,25 +149,41 @@ You can open or relocate the active config folder directly from the **General** 
 language = "en" # "en" or "da"
 buffer_size = 10
 clipboard_restore_delay_ms = 150
+snippet_hotkey_enabled = true
 quick_switch_enabled = true # Auto-navigate file dialogs to active Explorer tab
+case_changer_enabled = true
 
 [hotkey]
 modifiers = 6 # Ctrl (2) + Shift (4)
 virtual_key = 84 # 'T' key (0x54)
 
+[case_changer_hotkey]
+modifiers = 2 # Ctrl (2)
+virtual_key = 20 # CapsLock (0x14)
+
+[[snippets]]
+trigger = ".jd"
+replacement = "john.doe@example.com"
+mode = "immediate"
+
+[[snippets]]
+trigger = "jd"
+replacement = "John Doe"
+mode = "immediate"
+
 [[snippets]]
 trigger = ".sig"
-replacement = "Kind regards,\nYour Name"
+replacement = """
+Regards,
+John Doe
+101 Undisclosed Avenue
+Nowhere, XX 99999
+(212) 555-0123"""
 mode = "immediate"
 
 [[snippets]]
-trigger = ".em"
-replacement = "your.email@example.com"
-mode = "immediate"
-
-[[snippets]]
-trigger = "addr"
-replacement = "123 Innovation Way, Suite 400\nTech City, TC 54321"
+trigger = "bio"
+replacement = "John Doe is the nameless man with no known past, living somewhere unknown and carrying a phone that never got a real number, whose entire story is that nobody yet knows who he really is."
 mode = "hotkey"
 ```
 
@@ -205,7 +225,7 @@ mode = "hotkey"
 # Run in development mode
 cargo run
 
-# Run full test suite (130 tests)
+# Run full test suite (145 tests)
 cargo test
 
 # Run micro-benchmarks
@@ -215,7 +235,7 @@ cargo bench --bench buffer_benchmark
 cargo build --release
 
 # Build optimized release using build-std & UPX
-.\scripts\build-release.ps1 -Arch x64
+.\scripts\build-release.ps1
 ```
 
 ---
@@ -223,20 +243,21 @@ cargo build --release
 ## Changelog
 
 ### v0.2.0
-- **Windows Setup Installer**: Per-user Inno Setup installer with custom branded wizard images, Start Menu / Desktop shortcuts, autostart configuration, and post-install launch option.
+- **Windows Setup Installer & Smart Uninstall**: Per-user Inno Setup installer with custom branded wizard images, Start Menu / Desktop shortcuts, autostart configuration, and dual-mode uninstallation (delegating to `unins000.exe` when installed, and delayed self-deletion in portable mode).
 - **Custom Config Location Wizard**: Interactive installer step to choose between default AppData and custom/cloud-synced folders (OneDrive, Dropbox, etc.) with automatic snippet preservation on upgrade.
 - **Runtime Portable Mode**: Automatic fallback to local-directory config when no installation registry key is detected.
-- **UI Mode Badge & Migration**: Added mode indicator ("📦 Portable" / "💿 Installed") and "Move Config File…" relocation action in the Settings window.
+- **UI Mode Badge & About Tab**: Added mode indicator ("📦 Portable" / "💿 Installed"), About tab with live version / architecture badges, and "Move Config File…" relocation action in the Settings window.
+- **High-DPI Centering & Stable Window Layout**: Cursor-aware monitor work-area auto-centering, HiDPI scaling, and locked tab-switching constraints preventing layout jumps.
 - **Win32 Executable Metadata**: Embedded VERSIONINFO block (`ProductName`, `FileDescription`, `CompanyName`, `LegalCopyright`, `FileVersion`) — visible in File Explorer → Properties → Details and Windows Task Manager.
 - **Application Icon in Binary**: App icon (`ui/icon.ico`) embedded directly into `dotxpander.exe` — shown in File Explorer, Alt+Tab switcher, and taskbar without relying solely on the installer.
 - **Application Manifest**: Embedded `app.manifest` declaring PerMonitorV2 DPI awareness (sharp rendering on HiDPI / multi-monitor setups), `asInvoker` UAC level, Windows 10/11 `supportedOS` GUIDs, long-path awareness, UTF-8 active code page, and Segment Heap.
 - **Installer Hardening**: Added `MinVersion=10.0.17763` (blocks install on unsupported OS), `AppMutex` (detects running instance and offers to close it before upgrade), `CloseApplications` / `RestartApplications` (graceful upgrade flow), `LicenseFile` (MIT license shown in wizard), and a Pascal downgrade guard (`InitializeSetup()`) that warns before installing an older version over a newer one.
 - **Silent / Enterprise Install**: Documented Inno Setup silent flags (`/VERYSILENT /SILENT /NORESTART /ALLUSERS=0`) in README for Winget, MDM, and sysadmin deployment.
-- **Case & Space Changer**: Global `Ctrl + CapsLock` menu supporting 10+ text transformations (uppercase, lowercase, title case, camelCase, PascalCase, hyphenate, underscore, line-break normalization).
+- **Case & Space Changer**: Global `Ctrl + CapsLock` menu supporting 10+ text transformations (uppercase, lowercase, title case, camelCase, PascalCase, hyphenate, underscore, line-break normalization, and 3 Windows Filename sanitization modes).
 - **Quick Switch File Dialog Sync**: Auto-navigation of Windows file dialogs to the active File Explorer folder, including Windows 11 multi-tab Explorer support via COM.
 - **Release Optimization Pipeline**: Integrated Rust Nightly `build-std`, dead-code stripping MSVC linker flags, and UPX compression (~58% size reduction on x64).
 - **Rebranding**: Complete identity update to **dotXPANDER** by **aiVOLUTION**.
-- **Test Suite**: Expanded automated unit test suite to 130 tests.
+- **Test Suite**: Expanded automated unit test suite to **145 unit tests** across geometry, filename transformations, configuration, and uninstall flows.
 
 ### v0.1.0
 - Initial dual-architecture release supporting ARM64 and x86_64.
