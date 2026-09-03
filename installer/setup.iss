@@ -55,8 +55,8 @@ Source: "{#MyAppExePath}"; DestDir: "{app}"; DestName: "dotxpander.exe"; Flags: 
 Source: "..\ui\icon.ico"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
-Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\dotxpander.exe"; IconFilename: "{app}\icon.ico"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\dotxpander.exe"; Tasks: desktopicon; IconFilename: "{app}\icon.ico"
+Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\dotxpander.exe"; IconFilename: "{app}\icon.ico"; AppUserModelID: "aiVOLUTION.dotXPANDER"
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\dotxpander.exe"; Tasks: desktopicon; IconFilename: "{app}\icon.ico"; AppUserModelID: "aiVOLUTION.dotXPANDER"
 
 [Registry]
 ; Autostart registry entry (only created when the "autostart" task is selected)

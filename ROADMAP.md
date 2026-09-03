@@ -18,6 +18,9 @@ Extend `case_changer.rs` and `text_utils.rs` with menu actions that sanitize sel
 - **Clean + Underscore**: Remove illegal characters and convert all whitespace sequences into single underscores (`_`).
 - **Clean + Hyphen**: Remove illegal characters and convert all whitespace sequences into single hyphens (`-`).
 
+### 3. Code Signing (Authenticode)
+Acquire an OV or EV Code Signing Certificate and integrate it into the GitHub Actions pipeline (`release.yml`) to sign the installer and executable, preventing Windows Defender SmartScreen warnings.
+
 ---
 
 ## Medium Priority

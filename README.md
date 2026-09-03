@@ -94,6 +94,10 @@ The setup wizard:
 - Creates Start Menu and optional Desktop shortcuts.
 - Offers optional autostart at Windows sign-in.
 - Supports clean uninstallation from Windows Settings, preserving cloud-synced snippet files.
+- Displays the MIT license agreement during installation.
+- Detects a running instance and offers to close it before upgrading — no manual steps needed.
+- Guards against accidental downgrading over a newer version.
+- Requires Windows 10 (build 17763 / 1809) or later.
 
 ### Option B: Portable ZIP
 
@@ -113,14 +117,11 @@ dotXPANDER-Setup-x64.exe /VERYSILENT /NORESTART /ALLUSERS=0
 # Silent with progress bar visible
 dotXPANDER-Setup-x64.exe /SILENT /NORESTART
 
-# Override config directory (e.g., a network share)
-dotXPANDER-Setup-x64.exe /VERYSILENT /NORESTART /ALLUSERS=0
-
-# Silent uninstall (after locating the uninstaller)
+# Silent uninstall (locates uninstaller automatically)
 "%LOCALAPPDATA%\Programs\aiVOLUTION\dotXPANDER\unins000.exe" /VERYSILENT /NORESTART
 ```
 
-> **Note:** `/ALLUSERS=0` explicitly installs per-user (to `%LOCALAPPDATA%`), which requires no UAC prompt. This is the only supported mode — system-wide installation is not supported.
+> **Note:** `/ALLUSERS=0` installs per-user (to `%LOCALAPPDATA%`), requiring no UAC prompt. This is the only supported mode — system-wide installation is not available.
 
 ---
 
@@ -222,13 +223,18 @@ cargo build --release
 ## Changelog
 
 ### v0.2.0
-- **Windows Setup Installer**: Per-user Inno Setup installer with custom branded header, desktop/start menu shortcuts, autostart configuration, and post-install launch option.
-- **Custom Config Location Wizard**: Interactive installer step to choose between default AppData and custom/cloud-synced folders (OneDrive, Dropbox, etc.) with automatic snippet preservation.
-- **Runtime Portable Mode**: Automatic fallback to local directory configuration when no installation registry key is detected.
+- **Windows Setup Installer**: Per-user Inno Setup installer with custom branded wizard images, Start Menu / Desktop shortcuts, autostart configuration, and post-install launch option.
+- **Custom Config Location Wizard**: Interactive installer step to choose between default AppData and custom/cloud-synced folders (OneDrive, Dropbox, etc.) with automatic snippet preservation on upgrade.
+- **Runtime Portable Mode**: Automatic fallback to local-directory config when no installation registry key is detected.
 - **UI Mode Badge & Migration**: Added mode indicator ("📦 Portable" / "💿 Installed") and "Move Config File…" relocation action in the Settings window.
-- **Case & Space Changer**: Global `Ctrl + CapsLock` menu supporting 10+ text transformations (uppercase, lowercase, title case, camelCase, PascalCase, hyphenate, underscore, line break normalization).
+- **Win32 Executable Metadata**: Embedded VERSIONINFO block (`ProductName`, `FileDescription`, `CompanyName`, `LegalCopyright`, `FileVersion`) — visible in File Explorer → Properties → Details and Windows Task Manager.
+- **Application Icon in Binary**: App icon (`ui/icon.ico`) embedded directly into `dotxpander.exe` — shown in File Explorer, Alt+Tab switcher, and taskbar without relying solely on the installer.
+- **Application Manifest**: Embedded `app.manifest` declaring PerMonitorV2 DPI awareness (sharp rendering on HiDPI / multi-monitor setups), `asInvoker` UAC level, Windows 10/11 `supportedOS` GUIDs, long-path awareness, UTF-8 active code page, and Segment Heap.
+- **Installer Hardening**: Added `MinVersion=10.0.17763` (blocks install on unsupported OS), `AppMutex` (detects running instance and offers to close it before upgrade), `CloseApplications` / `RestartApplications` (graceful upgrade flow), `LicenseFile` (MIT license shown in wizard), and a Pascal downgrade guard (`InitializeSetup()`) that warns before installing an older version over a newer one.
+- **Silent / Enterprise Install**: Documented Inno Setup silent flags (`/VERYSILENT /SILENT /NORESTART /ALLUSERS=0`) in README for Winget, MDM, and sysadmin deployment.
+- **Case & Space Changer**: Global `Ctrl + CapsLock` menu supporting 10+ text transformations (uppercase, lowercase, title case, camelCase, PascalCase, hyphenate, underscore, line-break normalization).
 - **Quick Switch File Dialog Sync**: Auto-navigation of Windows file dialogs to the active File Explorer folder, including Windows 11 multi-tab Explorer support via COM.
-- **Release Optimization Pipeline**: Integrated Rust Nightly `build-std`, dead-code stripping MSVC linker flags, and UPX compression.
+- **Release Optimization Pipeline**: Integrated Rust Nightly `build-std`, dead-code stripping MSVC linker flags, and UPX compression (~58% size reduction on x64).
 - **Rebranding**: Complete identity update to **dotXPANDER** by **aiVOLUTION**.
 - **Test Suite**: Expanded automated unit test suite to 130 tests.
 

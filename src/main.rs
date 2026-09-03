@@ -17,6 +17,17 @@ use arc_swap::ArcSwap;
 
 fn main() {
     // ---------------------------------------------------------------------------
+    // Register Application User Model ID (AUMID)
+    // Groups taskbar icons and Toast Notifications properly in Windows 10/11.
+    // ---------------------------------------------------------------------------
+    unsafe {
+        use windows::Win32::UI::Shell::SetCurrentProcessExplicitAppUserModelID;
+        use windows::core::PCWSTR;
+        let aumid: Vec<u16> = "aiVOLUTION.dotXPANDER\0".encode_utf16().collect();
+        let _ = SetCurrentProcessExplicitAppUserModelID(PCWSTR(aumid.as_ptr()));
+    }
+
+    // ---------------------------------------------------------------------------
     // Singleton guard — prevent multiple instances running simultaneously.
     //
     // If two instances run at the same time they each install a WH_KEYBOARD_LL

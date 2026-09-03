@@ -60,8 +60,6 @@ flowchart TD
 **`installer/wizard_small.bmp`** — Branded 55×58 header logo for Inno Setup wizard pages (`WizardSmallImageFile`).
 **`installer/wizard_large.bmp`** — Branded 164×314 sidebar banner for Welcome and Finish wizard pages (`WizardImageFile`).
 
-
-
 **`.github/workflows/release.yml`** — Updated CI/CD pipeline:
 - Builds release binaries with Rust Nightly + `build-std` (`-Z build-std=std,panic_abort`) across both `arm64` and `x64`.
 - Compresses x64 binary with UPX (`upx --best --lzma`) down to ~3.3 MB (ARM64 remains native as UPX does not support Windows ARM64 PE).
@@ -96,7 +94,7 @@ flowchart TD
 
 ### Implemented (Phase 1 Follow-up) ✅ Complete
 
-The following runtime and UI features designed as part of Phase 1 are fully implemented in Rust/Slint:
+**Registry-based config discovery & UI integration:**
 
 - **`src/config.rs`** — Registry-based config discovery (`resolve_config_dir`, `is_portable`, `move_config_dir`, `update_config_registry`). Reads `HKCU\Software\aiVOLUTION\dotXPANDER\ConfigPath` from the registry with automatic fallback to portable mode (config next to executable) or default `%APPDATA%\aiVOLUTION\dotXPANDER`.
 - **`src/ui.rs`** — `move-config-folder` callback and `is-portable` property binding.
