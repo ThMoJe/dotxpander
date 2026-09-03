@@ -114,9 +114,9 @@ begin
   Result := True;
   if IsDowngrade() then
   begin
-    Msg := 'A newer version of ' + '{#MyAppName}' + ' is already installed.' + #13#10 +
-           #13#10 +
-           'Installing this older version may cause issues.' + #13#10 +
+    Msg := 'A newer version of ' + '{#MyAppName}' + ' is already installed.' + Chr(13) + Chr(10) +
+           Chr(13) + Chr(10) +
+           'Installing this older version may cause issues.' + Chr(13) + Chr(10) +
            'Are you sure you want to continue?';
     Result := MsgBox(Msg, mbConfirmation, MB_YESNO) = IDYES;
   end;
