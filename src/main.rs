@@ -57,9 +57,9 @@ fn main() {
                         use windows::Win32::UI::WindowsAndMessaging::{
                             MessageBoxW, MB_ICONINFORMATION, MB_OK,
                         };
-                        let title: Vec<u16> = "dotXPANDER\0".encode_utf16().collect();
+                        let title: Vec<u16> = ".XPANDER\0".encode_utf16().collect();
                         let text: Vec<u16> =
-                            "dotXPANDER is already running.\n\nCheck the system tray.\0"
+                            ".XPANDER is already running.\n\nCheck the system tray.\0"
                                 .encode_utf16()
                                 .collect();
                         let _ = MessageBoxW(
@@ -121,7 +121,7 @@ fn main() {
                 use windows::Win32::UI::WindowsAndMessaging::{MessageBoxW, MB_ICONERROR, MB_OK};
                 use windows::core::PCWSTR;
 
-                let title: Vec<u16> = "dotXPANDER — Fatal Error\0"
+                let title: Vec<u16> = ".XPANDER — Fatal Error\0"
                     .encode_utf16().collect();
                 let text: Vec<u16> = format!(
                     "Could not install keyboard hook:\n\n{e}\n\nPlease check your antivirus settings \

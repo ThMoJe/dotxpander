@@ -120,7 +120,7 @@ pub fn get_strings(lang: &str) -> Strings {
 }
 
 const STRINGS_EN: Strings = Strings {
-    window_title: "dotXPANDER - Settings",
+    window_title: ".XPANDER - Settings",
     header: "Settings",
     hotkey_label: "Snippet hotkey:",
     hotkey_save: "Set",
@@ -141,7 +141,7 @@ const STRINGS_EN: Strings = Strings {
     btn_pause_tooltip: "Temporarily pause replacing text you type",
     btn_cancel: "Cancel",
     btn_save: "Save",
-    tray_tooltip: "dotXPANDER\nClick for settings",
+    tray_tooltip: ".XPANDER\nClick for settings",
     tray_open: "Open settings",
     tray_quit: "Quit",
     err_needs_mod: "Invalid: Requires Ctrl/Alt/Shift/Win",
@@ -151,7 +151,7 @@ const STRINGS_EN: Strings = Strings {
     err_conflict: "Conflict: Already in use by another app",
     uninstall_btn: "\u{2620}",
     uninstall_tooltip: "Uninstall and delete app and its files",
-    uninstall_title: "Uninstall dotXPANDER",
+    uninstall_title: "Uninstall .XPANDER",
     uninstall_body: "This will permanently delete:\r\n\r\n  \u{2022} All settings and snippets\r\n  \u{2022} The application .exe file\r\n  \u{2022} The debug log\r\n\r\nThe app closes immediately. The .exe is removed a moment later.\r\n\r\nThis cannot be undone. Proceed?",
     btn_cancel_tooltip: "Undo all changes since last save",
     hotkey_label_tooltip: "When enabled the Hotkey inserts non-automatic snippets in any program",
@@ -192,7 +192,7 @@ const STRINGS_EN: Strings = Strings {
 };
 
 const STRINGS_DA: Strings = Strings {
-    window_title: "dotXPANDER - Indstillinger",
+    window_title: ".XPANDER - Indstillinger",
     header: "Indstillinger",
     hotkey_label: "Tekstklip genvej:",
     hotkey_save: "Sæt",
@@ -213,7 +213,7 @@ const STRINGS_DA: Strings = Strings {
     btn_pause_tooltip: "Sæt teksterstatning midlertidigt på pause",
     btn_cancel: "Annuller",
     btn_save: "Gem",
-    tray_tooltip: "dotXPANDER\nKlik for indstillinger",
+    tray_tooltip: ".XPANDER\nKlik for indstillinger",
     tray_open: "Åbn indstillinger",
     tray_quit: "Afslut",
     err_needs_mod: "Ugyldig: Kræver Ctrl/Alt/Shift/Win",
@@ -223,7 +223,7 @@ const STRINGS_DA: Strings = Strings {
     err_conflict: "Konflikt: Allerede i brug af anden app",
     uninstall_btn: "\u{2620}",
     uninstall_tooltip: "Afinstaller og slet app og dens filer",
-    uninstall_title: "Afinstaller dotXPANDER",
+    uninstall_title: "Afinstaller .XPANDER",
     uninstall_body: "Dette vil permanent slette:\r\n\r\n  \u{2022} Alle indstillinger og genvejstekster\r\n  \u{2022} Applikationens .exe-fil\r\n  \u{2022} Debug-loggen\r\n\r\nAppen lukker med det samme. .exe-filen fjernes kort efter.\r\n\r\nDette kan ikke fortrydes. Forts\u{00E6}t?",
     btn_cancel_tooltip: "Fortryd alle ændringer siden sidste gem",
     hotkey_label_tooltip: "Når aktiveret indsætter genvejstast ikke-automatiske tekstklip i et hvilket som helst program",
@@ -343,14 +343,14 @@ mod tests {
     fn test_english_strings_fully_populated() {
         let strings = get_strings("en");
         assert_all_fields_non_empty(&strings, "en");
-        assert_eq!(strings.window_title, "dotXPANDER - Settings");
+        assert_eq!(strings.window_title, ".XPANDER - Settings");
     }
 
     #[test]
     fn test_danish_strings_fully_populated() {
         let strings = get_strings("da");
         assert_all_fields_non_empty(&strings, "da");
-        assert_eq!(strings.window_title, "dotXPANDER - Indstillinger");
+        assert_eq!(strings.window_title, ".XPANDER - Indstillinger");
     }
 
     #[test]
