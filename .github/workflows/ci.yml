@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  check:
+    name: Check & Cache (${{ matrix.arch_name }})
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: aarch64-pc-windows-msvc
+            arch_name: arm64
+          - target: x86_64-pc-windows-msvc
+            arch_name: x64
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.2.2
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-08-30
+          targets: ${{ matrix.target }}
+          components: rust-src
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+          cache-all-crates: "true"
+          cache-targets: "true"
+
+      - name: Cargo test
+        if: matrix.arch_name == 'x64'
+        run: cargo test
+
+      - name: Build release binary (build-std)
+        run: cargo build -Z build-std=std,panic_abort --release --target ${{ matrix.target }}

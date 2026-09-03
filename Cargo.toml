@@ -73,7 +73,7 @@ winresource = "0.1"
 # Mandatory settings per dotxpander-binary-optimizer skill.
 [profile.release]
 opt-level = "z"      # Optimize for binary size (smallest output)
-lto = true           # Full link-time optimization across all crates
+lto = "thin"         # Thin LTO for fast parallel link time
 codegen-units = 1    # Single codegen unit for maximum inlining/optimization
 strip = true         # Strip debug symbols and metadata from the binary
 panic = "abort"      # Remove unwinding machinery (saves ~50 KB+)

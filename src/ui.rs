@@ -979,23 +979,37 @@ pub fn setup_and_run(
             let htid = hook_thread_id;
             let config_for_uninstall = config.clone();
             window.on_uninstall_app(move || {
-                let lang = config_for_uninstall.load().language.clone();
-                let s = crate::i18n::get_strings(&lang);
-                let confirmed = unsafe {
-                    use windows::Win32::UI::WindowsAndMessaging::{
-                        MessageBoxW, MB_ICONWARNING, MB_YESNO, MB_DEFBUTTON2, IDYES,
-                    };
-                    use windows::core::PCWSTR;
-                    let title: Vec<u16> = s.uninstall_title.encode_utf16().chain(std::iter::once(0)).collect();
-                    let body:  Vec<u16> = s.uninstall_body.encode_utf16().chain(std::iter::once(0)).collect();
-                    MessageBoxW(None, PCWSTR(body.as_ptr()), PCWSTR(title.as_ptr()),
-                        MB_ICONWARNING | MB_YESNO | MB_DEFBUTTON2) == IDYES
-                };
-                if confirmed {
-                    crate::config::log_debug("UI: user confirmed uninstall");
+                let exe_path = std::env::current_exe().unwrap_or_default();
+                let is_installed = crate::uninstall::find_uninstaller(&exe_path).is_some();
+
+                if is_installed {
+                    // In installed mode, directly launch the official Windows uninstaller
+                    // (unins000.exe presents its own native confirmation dialog and wizard).
+                    crate::config::log_debug("UI: triggering installed uninstaller");
                     if let Err(e) = crate::uninstall::self_destruct(htid) {
                         crate::config::log_debug(&format!("uninstall failed: {e}"));
                         eprintln!("uninstall failed: {e}");
+                    }
+                } else {
+                    // In portable mode, confirm before permanently deleting the standalone .exe and local config.
+                    let lang = config_for_uninstall.load().language.clone();
+                    let s = crate::i18n::get_strings(&lang);
+                    let confirmed = unsafe {
+                        use windows::Win32::UI::WindowsAndMessaging::{
+                            MessageBoxW, MB_ICONWARNING, MB_YESNO, MB_DEFBUTTON2, IDYES,
+                        };
+                        use windows::core::PCWSTR;
+                        let title: Vec<u16> = s.uninstall_title.encode_utf16().chain(std::iter::once(0)).collect();
+                        let body:  Vec<u16> = s.uninstall_body.encode_utf16().chain(std::iter::once(0)).collect();
+                        MessageBoxW(None, PCWSTR(body.as_ptr()), PCWSTR(title.as_ptr()),
+                            MB_ICONWARNING | MB_YESNO | MB_DEFBUTTON2) == IDYES
+                    };
+                    if confirmed {
+                        crate::config::log_debug("UI: user confirmed portable uninstall");
+                        if let Err(e) = crate::uninstall::self_destruct(htid) {
+                            crate::config::log_debug(&format!("uninstall failed: {e}"));
+                            eprintln!("uninstall failed: {e}");
+                        }
                     }
                 }
             });

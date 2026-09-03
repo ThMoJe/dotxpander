@@ -9,7 +9,7 @@ export struct SnippetModel {
 
 export component AppTray inherits SystemTrayIcon {
     icon: @image-url("icon.png");
-    in-out property <string> tray-tooltip-text: "dotXPANDER\nClick for settings";
+    in-out property <string> tray-tooltip-text: ".XPANDER\nClick for settings";
     in-out property <string> tray-open-text: "Open settings";
     in-out property <string> tray-quit-text: "Quit";
     
@@ -34,7 +34,7 @@ export component AppTray inherits SystemTrayIcon {
 }
 
 export component ConfigWindow inherits Window {
-    in-out property <string> window-title-text: "dotXPANDER - Settings";
+    in-out property <string> window-title-text: ".XPANDER - Settings";
     title: window-title-text;
     icon: @image-url("icon.png");
     min-width: 722px;
@@ -154,8 +154,8 @@ export component ConfigWindow inherits Window {
         VerticalLayout {
             width: 100%;
             height: 100%;
-            padding: 20px;
-            spacing: 12px;
+            padding: 16px;
+            spacing: 10px;
         
         // ── Global header: title + language toggle (always visible) ──────────
         HorizontalLayout {
@@ -331,7 +331,7 @@ export component ConfigWindow inherits Window {
 
         // ── GENERAL TAB ──────────────────────────────────────────────────────
         if active-tab == 0 : VerticalLayout {
-            spacing: 14px;
+            spacing: 8px;
             vertical-stretch: 1;
             padding: 0px;
             min-width: 680px;
@@ -1019,16 +1019,18 @@ export component ConfigWindow inherits Window {
 
             // Snippet list — Flickable for scroll + manual scrollbar track/thumb
             HorizontalLayout {
-                min-height: 150px;
+                min-height: 120px;
+                preferred-height: 240px;
                 vertical-stretch: 1;
                 spacing: 4px;
 
                 snippet-list := Flickable {
                     horizontal-stretch: 1;
                     interactive: true;
-                    // viewport-height is left unbounded so dynamically-sized rows (multi-line
-                    // replacement text) scroll correctly. Slint measures each row naturally.
-                    viewport-height: max(self.preferred-height, self.height);
+                    // viewport-height auto-sized by Slint from child VerticalLayout —
+                    // do NOT set preferred-height or an explicit viewport-height here.
+                    // The HorizontalLayout container above limits what Slint asks the
+                    // window for, while the Flickable scrolls all rows without clipping.
 
                     VerticalLayout {
                         spacing: 6px;
@@ -1341,11 +1343,14 @@ export component ConfigWindow inherits Window {
                     vertical-alignment: center;
                 }
             }
+
+            // Spacer pushes remaining space to the bottom (keeps button bar pinned)
+            Rectangle { vertical-stretch: 1; }
         } // if active-tab == 1
 
         // ── ABOUT TAB ────────────────────────────────────────────────────────
         if active-tab == 2 : VerticalLayout {
-            spacing: 12px;
+            spacing: 8px;
             vertical-stretch: 1;
             padding: 0px;
             min-width: 680px;
@@ -1379,12 +1384,26 @@ export component ConfigWindow inherits Window {
                             spacing: 10px;
                             alignment: start;
 
-                            Text {
-                                text: "dotXPANDER";
-                                font-size: 20px;
-                                font-weight: 800;
-                                color: #cdd6f4;
-                                vertical-alignment: center;
+                            // "." is bold; "XPANDER" is regular-weight — split to mix weights
+                            HorizontalLayout {
+                                spacing: 0px;
+                                vertical-stretch: 0;
+
+                                Text {
+                                    text: ".";
+                                    font-size: 20px;
+                                    font-weight: 900;
+                                    color: #cdd6f4;
+                                    vertical-alignment: center;
+                                }
+
+                                Text {
+                                    text: "XPANDER";
+                                    font-size: 20px;
+                                    font-weight: 800;
+                                    color: #cdd6f4;
+                                    vertical-alignment: center;
+                                }
                             }
 
                             // Version & Arch Badge
@@ -1541,7 +1560,9 @@ export component ConfigWindow inherits Window {
                 border-color: #313244;
                 border-radius: 8px;
                 background: #181825;
-                vertical-stretch: 1;
+                min-height: 80px;
+                preferred-height: 140px;
+                vertical-stretch: 0;
 
                 VerticalLayout {
                     padding: 14px;
@@ -1567,6 +1588,9 @@ export component ConfigWindow inherits Window {
                     }
                 }
             }
+
+            // Spacer pushes remaining space to the bottom (keeps button bar pinned)
+            Rectangle { vertical-stretch: 1; }
         } // if active-tab == 2
 
         // ── Global bottom button bar (always visible) ─────────────────────────

@@ -39,8 +39,9 @@ jobs:
         uses: actions/checkout@v4.2.2
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@nightly
+        uses: dtolnay/rust-toolchain@master
         with:
+          toolchain: nightly-2026-08-30
           targets: ${{ matrix.target }}
           components: rust-src
 
@@ -48,15 +49,22 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           key: ${{ matrix.target }}
+          cache-all-crates: "true"
+          cache-targets: "true"
 
       - name: Build release binary (build-std)
-        run: cargo +nightly build -Z build-std=std,panic_abort --release --target ${{ matrix.target }}
+        run: cargo build -Z build-std=std,panic_abort --release --target ${{ matrix.target }}
 
       - name: Compress binary with UPX (x64 only)
         if: matrix.arch_name == 'x64'
         shell: pwsh
         run: |
-          choco install upx --no-progress
+          if (-not (Get-Command upx -ErrorAction SilentlyContinue)) {
+            Write-Host "Downloading UPX release..."
+            Invoke-WebRequest -Uri "https://github.com/upx/upx/releases/download/v4.2.4/upx-4.2.4-win64.zip" -OutFile "$env:TEMP\upx.zip"
+            Expand-Archive -Path "$env:TEMP\upx.zip" -DestinationPath "$env:TEMP\upx" -Force
+            Copy-Item "$env:TEMP\upx\upx-4.2.4-win64\upx.exe" -Destination "C:\Windows\System32\upx.exe" -Force
+          }
           upx --best --lzma "target/${{ matrix.target }}/release/dotxpander.exe"
 
       - name: Package zip archive
