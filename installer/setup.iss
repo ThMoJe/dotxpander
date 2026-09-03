@@ -194,14 +194,29 @@ begin
         'virtual_key = 20'                               + Chr(13)+Chr(10) +
         ''                                               + Chr(13)+Chr(10) +
         '[[snippets]]'                                   + Chr(13)+Chr(10) +
-        'trigger = ".sig"'                               + Chr(13)+Chr(10) +
-        'replacement = "Regards,\nYour Name"'            + Chr(13)+Chr(10) +
+        'trigger = ".jd"'                                + Chr(13)+Chr(10) +
+        'replacement = "john.doe@example.com"'          + Chr(13)+Chr(10) +
         'mode = "immediate"'                             + Chr(13)+Chr(10) +
         ''                                               + Chr(13)+Chr(10) +
         '[[snippets]]'                                   + Chr(13)+Chr(10) +
-        'trigger = ".em"'                                + Chr(13)+Chr(10) +
-        'replacement = "your.name@example.com"'          + Chr(13)+Chr(10) +
-        'mode = "immediate"'                             + Chr(13)+Chr(10);
+        'trigger = "jd"'                                 + Chr(13)+Chr(10) +
+        'replacement = "John Doe"'                       + Chr(13)+Chr(10) +
+        'mode = "immediate"'                             + Chr(13)+Chr(10) +
+        ''                                               + Chr(13)+Chr(10) +
+        '[[snippets]]'                                   + Chr(13)+Chr(10) +
+        'trigger = ".sig"'                               + Chr(13)+Chr(10) +
+        'replacement = """'                              + Chr(13)+Chr(10) +
+        'Regards,'                                       + Chr(13)+Chr(10) +
+        'John Doe'                                       + Chr(13)+Chr(10) +
+        '101 Undisclosed Avenue'                         + Chr(13)+Chr(10) +
+        'Nowhere, XX 99999'                              + Chr(13)+Chr(10) +
+        '(212) 555-0123"""'                              + Chr(13)+Chr(10) +
+        'mode = "immediate"'                             + Chr(13)+Chr(10) +
+        ''                                               + Chr(13)+Chr(10) +
+        '[[snippets]]'                                   + Chr(13)+Chr(10) +
+        'trigger = "bio"'                                + Chr(13)+Chr(10) +
+        'replacement = "John Doe is the nameless man with no known past, living somewhere unknown and carrying a phone that never got a real number, whose entire story is that nobody yet knows who he really is."' + Chr(13)+Chr(10) +
+        'mode = "hotkey"'                                + Chr(13)+Chr(10);
 
       SaveStringToFile(ConfigFile, DefaultToml, False);
     end;

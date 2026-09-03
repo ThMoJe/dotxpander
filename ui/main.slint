@@ -39,8 +39,8 @@ export component ConfigWindow inherits Window {
     icon: @image-url("icon.png");
     min-width: 722px;
     min-height: 485px;
-    preferred-width: 722px;
-    preferred-height: 485px;
+    preferred-width: 843px;
+    preferred-height: 523px;
     default-font-size: 14px;
     background: #1e1e2e;
     
@@ -123,6 +123,8 @@ export component ConfigWindow inherits Window {
     callback cancel-config();
     callback add-snippet();
     callback remove-snippet(int);
+    callback move-snippet-up(int);
+    callback move-snippet-down(int);
     callback hotkey-clicked();
     callback key-recorded(string, bool, bool, bool, bool) -> bool;
     callback save-hotkey();
@@ -310,6 +312,7 @@ export component ConfigWindow inherits Window {
             // Right spacer + bottom border line under whole tab bar
             Rectangle {
                 horizontal-stretch: 1;
+                min-width: 200px;
                 background: transparent;
 
                 // Bottom border line continuing under the spacer
@@ -331,6 +334,7 @@ export component ConfigWindow inherits Window {
             spacing: 14px;
             vertical-stretch: 1;
             padding: 0px;
+            min-width: 680px;
 
             // Buffer row (top — most frequently referenced)
             HorizontalLayout {
@@ -987,6 +991,7 @@ export component ConfigWindow inherits Window {
             spacing: 6px;
             vertical-stretch: 1;
             padding: 0px;
+            min-width: 680px;
 
             // Snippet table header
             HorizontalLayout {
@@ -994,12 +999,14 @@ export component ConfigWindow inherits Window {
                 spacing: 6px;
                 height: 28px;
 
+                Rectangle { width: 32px; }
                 Rectangle {
                     width: 130px;
                     Text { text: i18n-col-trigger; font-weight: 700; color: #89b4fa; vertical-alignment: center; font-size: 12px; }
                 }
                 Rectangle {
                     min-width: 200px;
+                    preferred-width: 320px;
                     horizontal-stretch: 1;
                     Text { text: i18n-col-replacement; font-weight: 700; color: #89b4fa; vertical-alignment: center; }
                 }
@@ -1031,6 +1038,70 @@ export component ConfigWindow inherits Window {
                         spacing: 6px;
                         // Height is driven by the tallest child (the replacement textarea).
                         // min-height ensures collapsed rows never shrink below one text line.
+
+                        // Up/Down reorder arrows container (stacked)
+                        Rectangle {
+                            width: 32px;
+                            min-height: 38px;
+                            vertical-stretch: 0;
+
+                            VerticalLayout {
+                                spacing: 2px;
+                                alignment: center;
+
+                                // Up arrow button
+                                Rectangle {
+                                    height: 17px;
+                                    width: 32px;
+                                    border-radius: 3px;
+                                    border-width: 1px;
+                                    border-color: (index > 0 && up-touch.has-hover) ? #89b4fa : (index > 0 ? #45475a : #313244);
+                                    background: (index > 0 && up-touch.has-hover) ? #313244 : (index > 0 ? #1e1e2e : transparent);
+
+                                    Text {
+                                        text: "\u{25B2}";
+                                        font-size: 9px;
+                                        color: index > 0 ? (up-touch.has-hover ? #89b4fa : #cdd6f4) : #45475a;
+                                        vertical-alignment: center;
+                                        horizontal-alignment: center;
+                                    }
+
+                                    up-touch := TouchArea {
+                                        enabled: index > 0;
+                                        mouse-cursor: index > 0 ? pointer : default;
+                                        clicked => {
+                                            root.move-snippet-up(index);
+                                        }
+                                    }
+                                }
+
+                                // Down arrow button
+                                Rectangle {
+                                    height: 17px;
+                                    width: 32px;
+                                    border-radius: 3px;
+                                    border-width: 1px;
+                                    border-color: (index < snippets.length - 1 && down-touch.has-hover) ? #89b4fa : (index < snippets.length - 1 ? #45475a : #313244);
+                                    background: (index < snippets.length - 1 && down-touch.has-hover) ? #313244 : (index < snippets.length - 1 ? #1e1e2e : transparent);
+
+                                    Text {
+                                        text: "\u{25BC}";
+                                        font-size: 9px;
+                                        color: index < snippets.length - 1 ? (down-touch.has-hover ? #89b4fa : #cdd6f4) : #45475a;
+                                        vertical-alignment: center;
+                                        horizontal-alignment: center;
+                                    }
+
+                                    down-touch := TouchArea {
+                                        enabled: index < snippets.length - 1;
+                                        mouse-cursor: index < snippets.length - 1 ? pointer : default;
+                                        clicked => {
+                                            root.move-snippet-down(index);
+                                        }
+                                    }
+                                }
+                            }
+                        }
                         
                         // Trigger field (max 10 characters)
                         Rectangle {
@@ -1069,6 +1140,7 @@ export component ConfigWindow inherits Window {
                             border-radius: 4px;
                             background: #313244;
                             min-width: 200px;
+                            preferred-width: 320px;
                             horizontal-stretch: 1;
                             // Collapsed (2-line default) when unfocused; expands to content (max 100px) when focused
                             height: (trigger-input.has-focus || repl-input.has-focus)
@@ -1276,6 +1348,7 @@ export component ConfigWindow inherits Window {
             spacing: 12px;
             vertical-stretch: 1;
             padding: 0px;
+            min-width: 680px;
 
             // Card 1: Branding Header (Icon + Name + Version Badge + Tagline)
             Rectangle {

@@ -706,18 +706,23 @@ pub fn default_config() -> AppConfig {
         case_changer_hotkey: default_case_changer_hotkey(),
         snippets: vec![
             Snippet {
-                trigger: ".sig".to_string(),
-                replacement: "Regards,\nJohn Doe".to_string(),
-                mode: ExpansionMode::Immediate,
-            },
-            Snippet {
-                trigger: ".em".to_string(),
+                trigger: ".jd".to_string(),
                 replacement: "john.doe@example.com".to_string(),
                 mode: ExpansionMode::Immediate,
             },
             Snippet {
                 trigger: "jd".to_string(),
-                replacement: "With kind regards and sincerely - John Doe".to_string(),
+                replacement: "John Doe".to_string(),
+                mode: ExpansionMode::Immediate,
+            },
+            Snippet {
+                trigger: ".sig".to_string(),
+                replacement: "Regards,\nJohn Doe\n101 Undisclosed Avenue\nNowhere, XX 99999\n(212) 555-0123".to_string(),
+                mode: ExpansionMode::Immediate,
+            },
+            Snippet {
+                trigger: "bio".to_string(),
+                replacement: "John Doe is the nameless man with no known past, living somewhere unknown and carrying a phone that never got a real number, whose entire story is that nobody yet knows who he really is.".to_string(),
                 mode: ExpansionMode::Hotkey,
             },
         ],
@@ -814,13 +819,17 @@ mod tests {
         assert_eq!(config.clipboard_restore_delay_ms, 150);
         assert!(config.quick_switch_enabled, "quick_switch_enabled should default to true");
         assert!(config.snippet_hotkey_enabled, "snippet_hotkey_enabled should default to true");
-        assert_eq!(config.snippets.len(), 3);
-        assert_eq!(config.snippets[0].trigger, ".sig");
+        assert_eq!(config.snippets.len(), 4);
+        assert_eq!(config.snippets[0].trigger, ".jd");
+        assert_eq!(config.snippets[0].replacement, "john.doe@example.com");
         assert_eq!(config.snippets[0].mode, ExpansionMode::Immediate);
-        assert_eq!(config.snippets[1].trigger, ".em");
+        assert_eq!(config.snippets[1].trigger, "jd");
+        assert_eq!(config.snippets[1].replacement, "John Doe");
         assert_eq!(config.snippets[1].mode, ExpansionMode::Immediate);
-        assert_eq!(config.snippets[2].trigger, "jd");
-        assert_eq!(config.snippets[2].mode, ExpansionMode::Hotkey);
+        assert_eq!(config.snippets[2].trigger, ".sig");
+        assert_eq!(config.snippets[2].mode, ExpansionMode::Immediate);
+        assert_eq!(config.snippets[3].trigger, "bio");
+        assert_eq!(config.snippets[3].mode, ExpansionMode::Hotkey);
     }
 
     // NEXT-5: Verify that completely invalid TOML is rejected cleanly.

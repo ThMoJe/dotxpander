@@ -182,6 +182,85 @@ pub fn trim_working_set() {
     }
 }
 
+pub const DEFAULT_WINDOW_WIDTH: f32 = 843.0;
+pub const DEFAULT_WINDOW_HEIGHT: f32 = 523.0;
+pub const MIN_WINDOW_WIDTH: f32 = 722.0;
+pub const MIN_WINDOW_HEIGHT: f32 = 485.0;
+
+/// Pure mathematical calculation for centering and clamping window geometry given a work area RECT and scale factor.
+pub fn compute_centered_geometry_from_rect(
+    rc_work: windows::Win32::Foundation::RECT,
+    scale: f32,
+) -> (LogicalPosition, LogicalSize) {
+    let scale = if scale <= 0.0 { 1.0 } else { scale };
+
+    let work_w_phys = (rc_work.right - rc_work.left).max(1);
+    let work_h_phys = (rc_work.bottom - rc_work.top).max(1);
+
+    let work_w_log = work_w_phys as f32 / scale;
+    let work_h_log = work_h_phys as f32 / scale;
+
+    // Target size clamped to work area with margin if display is small
+    let target_w = if work_w_log < DEFAULT_WINDOW_WIDTH {
+        (work_w_log - 40.0).max(MIN_WINDOW_WIDTH).min(DEFAULT_WINDOW_WIDTH)
+    } else {
+        DEFAULT_WINDOW_WIDTH
+    };
+
+    let target_h = if work_h_log < DEFAULT_WINDOW_HEIGHT {
+        (work_h_log - 40.0).max(MIN_WINDOW_HEIGHT).min(DEFAULT_WINDOW_HEIGHT)
+    } else {
+        DEFAULT_WINDOW_HEIGHT
+    };
+
+    let target_w_phys = (target_w * scale).round() as i32;
+    let target_h_phys = (target_h * scale).round() as i32;
+
+    let phys_x = rc_work.left + (work_w_phys - target_w_phys) / 2;
+    let phys_y = rc_work.top + (work_h_phys - target_h_phys) / 2;
+
+    let pos = LogicalPosition::new(phys_x as f32 / scale, phys_y as f32 / scale);
+    let size = LogicalSize::new(target_w, target_h);
+    (pos, size)
+}
+
+/// Computes the initial centered window position and clamped size on the active monitor.
+///
+/// Targets the monitor where the cursor currently resides, using its usable work area
+/// (accounting for taskbars/docks). Clamps the 843x523 default size to fit smaller screens.
+pub fn calculate_initial_window_geometry(scale: f32) -> (LogicalPosition, LogicalSize) {
+    unsafe {
+        use windows::Win32::Foundation::POINT;
+        use windows::Win32::Graphics::Gdi::{
+            GetMonitorInfoW, MonitorFromPoint, MONITORINFO, MONITOR_DEFAULTTONEAREST,
+        };
+        use windows::Win32::UI::WindowsAndMessaging::GetCursorPos;
+
+        let mut pt = POINT { x: 0, y: 0 };
+        let has_cursor = GetCursorPos(&mut pt).is_ok();
+
+        let hmonitor = if has_cursor {
+            MonitorFromPoint(pt, MONITOR_DEFAULTTONEAREST)
+        } else {
+            MonitorFromPoint(POINT { x: 0, y: 0 }, MONITOR_DEFAULTTONEAREST)
+        };
+
+        let mut mi = MONITORINFO {
+            cbSize: std::mem::size_of::<MONITORINFO>() as u32,
+            ..Default::default()
+        };
+
+        if GetMonitorInfoW(hmonitor, &mut mi).as_bool() {
+            return compute_centered_geometry_from_rect(mi.rcWork, scale);
+        }
+    }
+
+    (
+        LogicalPosition::new(100.0, 100.0),
+        LogicalSize::new(DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT),
+    )
+}
+
 /// Applies all i18n strings to the `ConfigWindow` and `AppTray` for the given language.
 fn apply_language(window: &ConfigWindow, tray: &AppTray, lang: &str) {
     let s = crate::i18n::get_strings(lang);
@@ -362,8 +441,28 @@ fn setup_hotkey_capture_callbacks(
     });
 }
 
+/// Swaps two adjacent snippet rows in a `VecModel<SnippetModel>` upwards (row `idx` with `idx - 1`).
+pub(crate) fn move_snippet_up(model: &VecModel<SnippetModel>, idx: usize) {
+    if idx > 0 && idx < model.row_count() {
+        if let (Some(a), Some(b)) = (model.row_data(idx), model.row_data(idx - 1)) {
+            model.set_row_data(idx - 1, a);
+            model.set_row_data(idx, b);
+        }
+    }
+}
+
+/// Swaps two adjacent snippet rows in a `VecModel<SnippetModel>` downwards (row `idx` with `idx + 1`).
+pub(crate) fn move_snippet_down(model: &VecModel<SnippetModel>, idx: usize) {
+    if idx + 1 < model.row_count() {
+        if let (Some(a), Some(b)) = (model.row_data(idx), model.row_data(idx + 1)) {
+            model.set_row_data(idx + 1, a);
+            model.set_row_data(idx, b);
+        }
+    }
+}
+
 /// Wires up snippet list callbacks: save_config, cancel_config,
-/// close_requested, add_snippet, remove_snippet.
+/// close_requested, add_snippet, remove_snippet, move_snippet_up, move_snippet_down.
 fn setup_snippet_callbacks(
     window: &ConfigWindow,
     snippets_model: Rc<VecModel<SnippetModel>>,
@@ -476,10 +575,24 @@ fn setup_snippet_callbacks(
         });
     });
 
-    let model_clone = snippets_model;
+    let model_clone = snippets_model.clone();
     window.on_remove_snippet(move |index| {
         if index >= 0 && (index as usize) < model_clone.row_count() {
             model_clone.remove(index as usize);
+        }
+    });
+
+    let model_clone = snippets_model.clone();
+    window.on_move_snippet_up(move |index| {
+        if index >= 0 {
+            move_snippet_up(&model_clone, index as usize);
+        }
+    });
+
+    let model_clone = snippets_model;
+    window.on_move_snippet_down(move |index| {
+        if index >= 0 {
+            move_snippet_down(&model_clone, index as usize);
         }
     });
 }
@@ -888,15 +1001,22 @@ pub fn setup_and_run(
             });
 
             // Position & show (set_position BEFORE show avoids Win32 white blit)
-            if let Some(pos) = *saved_pos.lock().unwrap() {
-                window.window().set_position(pos);
-            }
+            let gdi_scale = unsafe {
+                use windows::Win32::Graphics::Gdi::{GetDC, GetDeviceCaps, ReleaseDC, LOGPIXELSX};
+                let hdc = GetDC(None);
+                let dpi = GetDeviceCaps(hdc, LOGPIXELSX);
+                let _ = ReleaseDC(None, hdc);
+                if dpi > 0 { dpi as f32 / 96.0 } else { 1.0 }
+            };
+            let (initial_pos, initial_size) = calculate_initial_window_geometry(gdi_scale);
+
+            let pos = saved_pos.lock().unwrap().unwrap_or(initial_pos);
+            window.window().set_position(pos);
+
+            let sz = saved_size.lock().unwrap().unwrap_or(initial_size);
+            window.window().set_size(sz);
+
             let _ = window.show();
-            if let Some(sz) = *saved_size.lock().unwrap() {
-                window.window().set_size(sz);
-            } else {
-                window.window().set_size(LogicalSize::new(722.0, 485.0));
-            }
 
             // Buffer debug timer (active ONLY while window exists)
             let timer = Timer::default();
@@ -944,5 +1064,171 @@ mod tests {
     #[test]
     fn test_trim_working_set_does_not_panic() {
         trim_working_set();
+    }
+
+    #[test]
+    fn test_move_snippet_up_swaps_with_previous() {
+        let model = VecModel::from(vec![
+            SnippetModel { trigger: "a".into(), replacement: "1".into(), mode: "immediate".into() },
+            SnippetModel { trigger: "b".into(), replacement: "2".into(), mode: "hotkey".into() },
+            SnippetModel { trigger: "c".into(), replacement: "3".into(), mode: "immediate".into() },
+        ]);
+        move_snippet_up(&model, 1);
+        assert_eq!(model.row_data(0).unwrap().trigger.as_str(), "b");
+        assert_eq!(model.row_data(1).unwrap().trigger.as_str(), "a");
+        assert_eq!(model.row_data(2).unwrap().trigger.as_str(), "c");
+    }
+
+    #[test]
+    fn test_move_snippet_up_at_index_0_is_noop() {
+        let model = VecModel::from(vec![
+            SnippetModel { trigger: "a".into(), replacement: "1".into(), mode: "immediate".into() },
+            SnippetModel { trigger: "b".into(), replacement: "2".into(), mode: "hotkey".into() },
+        ]);
+        move_snippet_up(&model, 0);
+        assert_eq!(model.row_data(0).unwrap().trigger.as_str(), "a");
+        assert_eq!(model.row_data(1).unwrap().trigger.as_str(), "b");
+    }
+
+    #[test]
+    fn test_move_snippet_up_out_of_bounds_is_noop() {
+        let model = VecModel::from(vec![
+            SnippetModel { trigger: "a".into(), replacement: "1".into(), mode: "immediate".into() },
+        ]);
+        move_snippet_up(&model, 5);
+        assert_eq!(model.row_data(0).unwrap().trigger.as_str(), "a");
+    }
+
+    #[test]
+    fn test_move_snippet_down_swaps_with_next() {
+        let model = VecModel::from(vec![
+            SnippetModel { trigger: "a".into(), replacement: "1".into(), mode: "immediate".into() },
+            SnippetModel { trigger: "b".into(), replacement: "2".into(), mode: "hotkey".into() },
+            SnippetModel { trigger: "c".into(), replacement: "3".into(), mode: "immediate".into() },
+        ]);
+        move_snippet_down(&model, 0);
+        assert_eq!(model.row_data(0).unwrap().trigger.as_str(), "b");
+        assert_eq!(model.row_data(1).unwrap().trigger.as_str(), "a");
+        assert_eq!(model.row_data(2).unwrap().trigger.as_str(), "c");
+    }
+
+    #[test]
+    fn test_move_snippet_down_at_last_index_is_noop() {
+        let model = VecModel::from(vec![
+            SnippetModel { trigger: "a".into(), replacement: "1".into(), mode: "immediate".into() },
+            SnippetModel { trigger: "b".into(), replacement: "2".into(), mode: "hotkey".into() },
+        ]);
+        move_snippet_down(&model, 1);
+        assert_eq!(model.row_data(0).unwrap().trigger.as_str(), "a");
+        assert_eq!(model.row_data(1).unwrap().trigger.as_str(), "b");
+    }
+
+    #[test]
+    fn test_move_snippet_down_out_of_bounds_is_noop() {
+        let model = VecModel::from(vec![
+            SnippetModel { trigger: "a".into(), replacement: "1".into(), mode: "immediate".into() },
+        ]);
+        move_snippet_down(&model, 5);
+        assert_eq!(model.row_data(0).unwrap().trigger.as_str(), "a");
+    }
+
+    #[test]
+    fn test_calculate_initial_window_geometry_valid_bounds() {
+        let (_pos, size) = calculate_initial_window_geometry(1.0);
+        assert!(size.width >= MIN_WINDOW_WIDTH && size.width <= DEFAULT_WINDOW_WIDTH);
+        assert!(size.height >= MIN_WINDOW_HEIGHT && size.height <= DEFAULT_WINDOW_HEIGHT);
+        let (_scaled_pos, scaled_size) = calculate_initial_window_geometry(1.75);
+        assert!(scaled_size.width >= MIN_WINDOW_WIDTH);
+        assert!(scaled_size.height >= MIN_WINDOW_HEIGHT);
+    }
+
+    #[test]
+    fn test_constants_and_dpi_proportions() {
+        assert!(DEFAULT_WINDOW_WIDTH >= MIN_WINDOW_WIDTH, "Default width must be >= min width");
+        assert!(DEFAULT_WINDOW_HEIGHT >= MIN_WINDOW_HEIGHT, "Default height must be >= min height");
+        // 843 * 1.75 = 1475.25 -> 1475 physical px
+        assert_eq!((DEFAULT_WINDOW_WIDTH * 1.75).round(), 1475.0);
+        // 523 * 1.75 = 915.25 -> 915 physical px
+        assert_eq!((DEFAULT_WINDOW_HEIGHT * 1.75).round(), 915.0);
+    }
+
+    #[test]
+    fn test_centering_primary_1080p_100_percent() {
+        use windows::Win32::Foundation::RECT;
+        let rc = RECT { left: 0, top: 0, right: 1920, bottom: 1040 };
+        let (pos, size) = compute_centered_geometry_from_rect(rc, 1.0);
+        assert_eq!(size.width, 843.0);
+        assert_eq!(size.height, 523.0);
+        assert_eq!(pos.x, ((1920 - 843) / 2) as f32);
+        assert_eq!(pos.y, ((1040 - 523) / 2) as f32);
+    }
+
+    #[test]
+    fn test_centering_high_dpi_175_percent() {
+        use windows::Win32::Foundation::RECT;
+        let rc = RECT { left: 0, top: 0, right: 2880, bottom: 1720 };
+        let (pos, size) = compute_centered_geometry_from_rect(rc, 1.75);
+        assert_eq!(size.width, 843.0);
+        assert_eq!(size.height, 523.0);
+        // Physical bounds verification
+        let phys_x = (pos.x * 1.75).round() as i32;
+        let phys_y = (pos.y * 1.75).round() as i32;
+        let phys_w = (size.width * 1.75).round() as i32;
+        let phys_h = (size.height * 1.75).round() as i32;
+        assert_eq!(phys_w, 1475);
+        assert_eq!(phys_h, 915);
+        assert_eq!(phys_x, (2880 - 1475) / 2);
+        assert_eq!(phys_y, (1720 - 915) / 2);
+    }
+
+    #[test]
+    fn test_centering_secondary_monitor_negative_x() {
+        use windows::Win32::Foundation::RECT;
+        // Secondary monitor positioned to the left of primary
+        let rc = RECT { left: -1920, top: 0, right: 0, bottom: 1080 };
+        let (pos, size) = compute_centered_geometry_from_rect(rc, 1.0);
+        assert_eq!(size.width, 843.0);
+        assert_eq!(size.height, 523.0);
+        let expected_x = (-1920 + (1920 - 843) / 2) as f32;
+        assert_eq!(pos.x, expected_x);
+        assert_eq!(pos.y, ((1080 - 523) / 2) as f32);
+    }
+
+    #[test]
+    fn test_centering_secondary_monitor_positive_x() {
+        use windows::Win32::Foundation::RECT;
+        // Secondary 1440p monitor placed to the right at 125% scale
+        let rc = RECT { left: 1920, top: 0, right: 4480, bottom: 1440 };
+        let (pos, size) = compute_centered_geometry_from_rect(rc, 1.25);
+        assert_eq!(size.width, 843.0);
+        assert_eq!(size.height, 523.0);
+        let phys_x = (pos.x * 1.25).round() as i32;
+        let phys_w = (size.width * 1.25).round() as i32;
+        assert_eq!(phys_x, 1920 + (2560 - phys_w) / 2);
+    }
+
+    #[test]
+    fn test_clamping_on_small_screen() {
+        use windows::Win32::Foundation::RECT;
+        // Small 750x500 display
+        let rc = RECT { left: 0, top: 0, right: 750, bottom: 500 };
+        let (pos, size) = compute_centered_geometry_from_rect(rc, 1.0);
+        assert!(size.width >= MIN_WINDOW_WIDTH);
+        assert!(size.height >= MIN_WINDOW_HEIGHT);
+        assert!(pos.x >= 0.0);
+        assert!(pos.y >= 0.0);
+    }
+
+    #[test]
+    fn test_dpi_scale_resilience_boundaries() {
+        use windows::Win32::Foundation::RECT;
+        let rc = RECT { left: 0, top: 0, right: 1920, bottom: 1080 };
+        for scale in [0.0, -1.0, 0.25, 0.5, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0] {
+            let (pos, size) = compute_centered_geometry_from_rect(rc, scale);
+            assert!(!pos.x.is_nan() && !pos.x.is_infinite(), "pos.x must be finite for scale {scale}");
+            assert!(!pos.y.is_nan() && !pos.y.is_infinite(), "pos.y must be finite for scale {scale}");
+            assert!(size.width >= MIN_WINDOW_WIDTH && size.width <= DEFAULT_WINDOW_WIDTH);
+            assert!(size.height >= MIN_WINDOW_HEIGHT && size.height <= DEFAULT_WINDOW_HEIGHT);
+        }
     }
 }
