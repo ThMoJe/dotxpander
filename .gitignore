@@ -10,7 +10,7 @@ Thumbs.db
 Desktop.ini
 
 # AI & Assistant Rules/Context (keep local only)
-GEMINI.md
-.agents/
+# GEMINI.md
+#.agents/
 .cursorrules
 .ai/
