@@ -336,43 +336,6 @@ export component ConfigWindow inherits Window {
             padding: 0px;
             min-width: 680px;
 
-            // Buffer row (top — most frequently referenced)
-            HorizontalLayout {
-                vertical-stretch: 0;
-                height: 36px;
-                spacing: 10px;
-
-                Text {
-                    text: i18n-buffer-label;
-                    color: #bac2de;
-                    vertical-alignment: center;
-                }
-
-                Rectangle {
-                    border-width: 1px;
-                    border-color: #45475a;
-                    border-radius: 6px;
-                    background: #181825;
-                    horizontal-stretch: 1;
-                    height: 36px;
-
-                    HorizontalLayout {
-                        padding-left: 10px;
-                        padding-right: 10px;
-
-                        Text {
-                            text: buffer-content == "" ? i18n-buffer-empty : buffer-content;
-                            color: buffer-content == "" ? #585b70 : #f9e2af;
-                            font-family: "Consolas";
-                            font-size: 13px;
-                            vertical-alignment: center;
-                            horizontal-alignment: left;
-                            overflow: elide;
-                        }
-                    }
-                }
-            }
-
             // ── Section: Hotkey ──────────────────────────────────────────────
             HorizontalLayout {
                 vertical-stretch: 0;
@@ -837,145 +800,165 @@ export component ConfigWindow inherits Window {
                 }
             }
 
-            // Config path row: folder icon | path text | mode badge | [Move Config...] button
-            VerticalLayout {
+            // Config path row: folder icon | path text | [Move Config...] button | mode badge pill
+            HorizontalLayout {
                 vertical-stretch: 0;
-                spacing: 4px;
+                height: 26px;
+                spacing: 6px;
 
-                // Row 1: folder button + path text + mode badge pill
-                HorizontalLayout {
-                    vertical-stretch: 0;
+                // Folder button (matches checkbox width 34px)
+                Rectangle {
+                    width: 34px;
                     height: 26px;
-                    spacing: 4px;
 
-                    // Folder button (matches checkbox width 34px)
                     Rectangle {
-                        width: 34px;
-                        height: 26px;
+                        x: 4px;
+                        y: 1px;
+                        width: 26px;
+                        height: 24px;
+                        border-radius: 4px;
+                        background: folder-touch.has-hover ? #45475a : #313244;
+                        border-width: 1px;
+                        border-color: folder-touch.has-hover ? #585b70 : #45475a;
 
-                        Rectangle {
-                            x: 4px;
-                            y: 1px;
-                            width: 26px;
-                            height: 24px;
-                            border-radius: 4px;
-                            background: folder-touch.has-hover ? #45475a : #313244;
-                            border-width: 1px;
-                            border-color: folder-touch.has-hover ? #585b70 : #45475a;
+                        folder-touch := TouchArea {
+                            mouse-cursor: pointer;
+                            clicked => { open-config-folder(); }
+                        }
 
-                            folder-touch := TouchArea {
-                                mouse-cursor: pointer;
-                                clicked => { open-config-folder(); }
-                            }
-
-                            Text {
-                                text: "\u{1F4C1}";
-                                font-size: 13px;
-                                vertical-alignment: center;
-                                horizontal-alignment: center;
-                            }
+                        Text {
+                            text: "\u{1F4C1}";
+                            font-size: 13px;
+                            vertical-alignment: center;
+                            horizontal-alignment: center;
                         }
                     }
+                }
 
-                    Text {
-                        text: config-file-path;
-                        font-size: 11px;
-                        color: #585b70;
-                        vertical-alignment: center;
-                        horizontal-alignment: left;
-                        overflow: elide;
-                        horizontal-stretch: 1;
+                Text {
+                    text: config-file-path;
+                    font-size: 11px;
+                    color: #585b70;
+                    vertical-alignment: center;
+                    horizontal-alignment: left;
+                    overflow: elide;
+                    horizontal-stretch: 1;
+                }
+
+                // "Move Config File…" button — only visible in installed mode (to the left of mode badge pill)
+                if !is-portable : Rectangle {
+                    width: move-btn-text.preferred-width + 20px;
+                    height: 24px;
+                    border-radius: 4px;
+                    border-width: 1px;
+                    background: move-btn-touch.has-hover ? #2a3a5a : #1e2a4a;
+                    border-color: move-btn-touch.has-hover ? #89b4fa : #585b70;
+
+                    move-btn-touch := TouchArea {
+                        mouse-cursor: pointer;
+                        clicked => { move-config-folder(); }
                     }
 
-                    // Mode badge pill: "📦 Portable" or "💿 Installed"
-                    Rectangle {
-                        width: mode-badge-text.preferred-width + 14px;
-                        height: 20px;
-                        border-radius: 10px;
-                        background: #313244;
-                        border-width: 1px;
-                        border-color: #585b70;
-
-                        mode-badge-text := Text {
-                            text: is-portable ? i18n-mode-portable : i18n-mode-installed;
-                            color: #cdd6f4;
-                            font-size: 10px;
+                    HorizontalLayout {
+                        padding-left: 8px;
+                        padding-right: 8px;
+                        move-btn-text := Text {
+                            text: i18n-move-config;
+                            color: move-btn-touch.has-hover ? #cdd6f4 : #89b4fa;
+                            font-size: 11px;
                             font-weight: 600;
                             vertical-alignment: center;
                             horizontal-alignment: center;
                         }
-
-                        badge-touch := TouchArea {}
-
-                        if is-portable && badge-touch.has-hover : Rectangle {
-                            x: -(320px - (mode-badge-text.preferred-width + 14px));
-                            y: -54px;
-                            width: 320px;
-                            height: 46px;
-                            background: #e6e9ef;
-                            border-width: 1px;
-                            border-color: #bcc0cc;
-                            border-radius: 4px;
-                            drop-shadow-blur: 4px;
-                            drop-shadow-color: #00000088;
-
-                            HorizontalLayout {
-                                padding-left: 8px;
-                                padding-right: 8px;
-                                portable-tip-text := Text {
-                                    text: i18n-mode-portable-tooltip;
-                                    font-size: 11px;
-                                    color: #11111b;
-                                    vertical-alignment: center;
-                                    wrap: word-wrap;
-                                }
-                            }
-                        }
                     }
                 }
 
-                // Row 2: "Move Config File…" button — only visible in installed mode
-                if !is-portable : HorizontalLayout {
-                    vertical-stretch: 0;
-                    height: 26px;
-                    spacing: 4px;
+                // Mode badge pill: "📦 Portable" or "💿 Installed"
+                Rectangle {
+                    width: mode-badge-text.preferred-width + 14px;
+                    height: 20px;
+                    border-radius: 10px;
+                    background: #313244;
+                    border-width: 1px;
+                    border-color: #585b70;
 
-                    // Indent to align with path text (skip folder button width + spacing)
-                    Rectangle { width: 38px; }
+                    mode-badge-text := Text {
+                        text: is-portable ? i18n-mode-portable : i18n-mode-installed;
+                        color: #cdd6f4;
+                        font-size: 10px;
+                        font-weight: 600;
+                        vertical-alignment: center;
+                        horizontal-alignment: center;
+                    }
 
-                    Rectangle {
-                        width: move-btn-text.preferred-width + 20px;
-                        height: 24px;
-                        border-radius: 4px;
+                    badge-touch := TouchArea {}
+
+                    if is-portable && badge-touch.has-hover : Rectangle {
+                        x: -(320px - (mode-badge-text.preferred-width + 14px));
+                        y: -54px;
+                        width: 320px;
+                        height: 46px;
+                        background: #e6e9ef;
                         border-width: 1px;
-                        background: move-btn-touch.has-hover ? #2a3a5a : #1e2a4a;
-                        border-color: move-btn-touch.has-hover ? #89b4fa : #585b70;
-
-                        move-btn-touch := TouchArea {
-                            mouse-cursor: pointer;
-                            clicked => { move-config-folder(); }
-                        }
+                        border-color: #bcc0cc;
+                        border-radius: 4px;
+                        drop-shadow-blur: 4px;
+                        drop-shadow-color: #00000088;
 
                         HorizontalLayout {
                             padding-left: 8px;
                             padding-right: 8px;
-                            move-btn-text := Text {
-                                text: i18n-move-config;
-                                color: move-btn-touch.has-hover ? #cdd6f4 : #89b4fa;
+                            portable-tip-text := Text {
+                                text: i18n-mode-portable-tooltip;
                                 font-size: 11px;
-                                font-weight: 600;
+                                color: #11111b;
                                 vertical-alignment: center;
-                                horizontal-alignment: left;
+                                wrap: word-wrap;
                             }
                         }
                     }
-
-                    Rectangle { horizontal-stretch: 1; }
                 }
             }
 
-            // Spacer pushes any remaining space to the bottom
+            // Spacer pushes Buffer and remaining space to the bottom of the middle section
             Rectangle { vertical-stretch: 1; }
+
+            // Buffer row (bottom of middle section)
+            HorizontalLayout {
+                vertical-stretch: 0;
+                height: 36px;
+                spacing: 10px;
+
+                Text {
+                    text: i18n-buffer-label;
+                    color: #bac2de;
+                    vertical-alignment: center;
+                }
+
+                Rectangle {
+                    border-width: 1px;
+                    border-color: #45475a;
+                    border-radius: 6px;
+                    background: #181825;
+                    horizontal-stretch: 1;
+                    height: 36px;
+
+                    HorizontalLayout {
+                        padding-left: 10px;
+                        padding-right: 10px;
+
+                        Text {
+                            text: buffer-content == "" ? i18n-buffer-empty : buffer-content;
+                            color: buffer-content == "" ? #585b70 : #f9e2af;
+                            font-family: "Consolas";
+                            font-size: 13px;
+                            vertical-alignment: center;
+                            horizontal-alignment: left;
+                            overflow: elide;
+                        }
+                    }
+                }
+            }
 
             // Save error message (shown on General tab when hotkey save fails)
             if save-error-message != "" : Text {
