@@ -18,7 +18,7 @@ This document describes the strategy, requirements, and step-by-step roadmap for
 
 The app is built for both native ARM64 (e.g. Snapdragon X Elite/Plus) and traditional 64-bit Intel/AMD (x86_64).
 
-- **GitHub Releases:** Builds two setup files: `dotXPANDER-Setup-arm64.exe` and `dotXPANDER-Setup-x64.exe`. Also ships standalone portable ZIPs.
+- **GitHub Releases:** Builds two setup files: `dotXPANDER-arm64-Setup.exe` and `dotXPANDER-x64-Setup.exe`. Also ships standalone portable ZIPs.
 - **Winget:** Supports multi-architecture in a single manifest. Winget automatically detects the client's CPU architecture and downloads the matching native installer.
 - **Microsoft Store:** Multiple MSIX packages (or a `.msixbundle`) uploaded under the same submission. The Store automatically serves the correct package to the user.
 
@@ -64,7 +64,7 @@ flowchart TD
 - Builds release binaries with Rust Nightly + `build-std` (`-Z build-std=std,panic_abort`) across both `arm64` and `x64`.
 - Compresses x64 binary with UPX (`upx --best --lzma`) down to ~3.3 MB (ARM64 remains native as UPX does not support Windows ARM64 PE).
 - Runs `iscc` (Inno Setup Compiler) for both `arm64` and `x64` builds.
-- Uploads `dotXPANDER-Setup-arm64.exe` and `dotXPANDER-Setup-x64.exe` to GitHub Releases alongside portable ZIPs and SHA-256 checksums.
+- Uploads `dotXPANDER-arm64-Setup.exe` and `dotXPANDER-x64-Setup.exe` to GitHub Releases alongside portable ZIPs and SHA-256 checksums.
 
 **Binary Size & Link-Time Optimizations (B1 & B2)**:
 - **`build-std` (B1)**: Recompiles `core`, `alloc`, and `std` from source with release profile flags (`opt-level = "z"`, `strip = true`, `panic = "abort"`), stripping unused standard library code on all architectures.

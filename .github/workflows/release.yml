@@ -29,10 +29,10 @@ jobs:
         include:
           - target: aarch64-pc-windows-msvc
             arch_name: arm64
-            exe_name: dotXPANDER-ARM64.exe
+            exe_name: dotXPANDER-arm64.exe
           - target: x86_64-pc-windows-msvc
             arch_name: x64
-            exe_name: dotXPANDER-x86_64.exe
+            exe_name: dotXPANDER-x64.exe
 
     steps:
       - name: Checkout repository
@@ -70,8 +70,8 @@ jobs:
       - name: Package zip archive
         shell: pwsh
         run: |
-          $version = if ("${{ github.ref_name }}" -match '^v') { "${{ github.ref_name }}" } else { "latest" }
-          $zipName = "dotXPANDER-${version}-${{ matrix.arch_name }}.zip"
+          $version = if ("${{ github.ref_name }}" -match '^v') { "${{ github.ref_name }}" } elseif ("${{ inputs.tag }}" -match '^v') { "${{ inputs.tag }}" } else { "latest" }
+          $zipName = "dotXPANDER-${{ matrix.arch_name }}-${version}.zip"
           
           # Create staging folder
           $stageDir = "dist_${{ matrix.arch_name }}"
@@ -93,7 +93,7 @@ jobs:
         shell: pwsh
         run: |
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DMyAppArchitecture="${{ matrix.arch_name }}" /DMyAppExePath="..\target\${{ matrix.target }}\release\dotxpander.exe" installer\setup.iss
-          Copy-Item "dist_installers\dotXPANDER-Setup-${{ matrix.arch_name }}.exe" -Destination .
+          Copy-Item "dist_installers\dotXPANDER-${{ matrix.arch_name }}-Setup.exe" -Destination .
 
       - name: Upload artifact for release
         uses: actions/upload-artifact@v4.6.2
@@ -102,7 +102,6 @@ jobs:
           path: |
             *.zip
             *.exe
-            dotXPANDER-Setup-*.exe
 
   publish:
     name: Publish GitHub Release

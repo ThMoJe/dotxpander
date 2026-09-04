@@ -87,7 +87,7 @@ Measured on Windows 11 using Criterion:
 
 ### Option A: Windows Installer (Recommended)
 
-Download `dotXPANDER-Setup-x64.exe` (or `-arm64`) from [Releases](https://github.com/ThMoJe/dotxpander/releases).
+Download `dotXPANDER-x64-Setup.exe` (or `dotXPANDER-arm64-Setup.exe`) from [Releases](https://github.com/ThMoJe/dotxpander/releases).
 
 The setup wizard:
 
@@ -103,7 +103,7 @@ The setup wizard:
 
 ### Option B: Portable ZIP
 
-Download `dotXPANDER-x64.zip` (or `-arm64`) and extract the executable anywhere (such as a USB drive or local directory).
+Download `dotXPANDER-x64-v0.2.0.zip` (or `dotXPANDER-arm64-v0.2.0.zip`) and extract the executable anywhere (such as a USB drive or local directory).
 
 - When launched without an installer registry key, dotXPANDER runs in **Portable Mode**.
 - `config.toml` is read from and saved to the same directory as `dotxpander.exe`.
@@ -115,10 +115,10 @@ For automated deployment (Winget, MDM, Group Policy, or CI scripts), the install
 
 ```powershell
 # Fully silent — no UI, no reboot prompt
-dotXPANDER-Setup-x64.exe /VERYSILENT /NORESTART /ALLUSERS=0
+dotXPANDER-x64-Setup.exe /VERYSILENT /NORESTART /ALLUSERS=0
 
 # Silent with progress bar visible
-dotXPANDER-Setup-x64.exe /SILENT /NORESTART
+dotXPANDER-x64-Setup.exe /SILENT /NORESTART
 
 # Silent uninstall (locates uninstaller automatically)
 "%LOCALAPPDATA%\Programs\aiVOLUTION\dotXPANDER\unins000.exe" /VERYSILENT /NORESTART

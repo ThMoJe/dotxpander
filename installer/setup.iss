@@ -22,7 +22,7 @@ DefaultDirName={localappdata}\Programs\aiVOLUTION\dotXPANDER
 ; Avoid UAC prompt by requesting lowest execution level
 PrivilegesRequired=lowest
 OutputDir=..\dist_installers
-OutputBaseFilename=dotXPANDER-Setup-{#MyAppArchitecture}
+OutputBaseFilename=dotXPANDER-{#MyAppArchitecture}-Setup
 SetupIconFile=..\ui\icon.ico
 WizardSmallImageFile=wizard_small.bmp
 WizardImageFile=wizard_large.bmp
