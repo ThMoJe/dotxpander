@@ -10,7 +10,7 @@
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application.
 AppId={{ACFE89A0-7A1E-4E92-95FD-A4E5D477324B}
-AppName={#MyAppName}
+AppName={#MyAppDisplay}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 AppPublisherURL=https://aivolution.dk
@@ -69,7 +69,7 @@ Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: 
 Root: HKCU; Subkey: "Software\aiVOLUTION\dotXPANDER"; ValueType: string; ValueName: "ConfigPath"; ValueData: "{code:GetConfigDir}"; Flags: uninsdeletekey
 
 [Run]
-Filename: "{app}\dotxpander.exe"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent; WorkingDir: "{app}"
+Filename: "{app}\dotxpander.exe"; Description: "{cm:LaunchProgram,{#StringChange(MyAppDisplay, '&', '&&')}}"; Flags: nowait postinstall skipifsilent; WorkingDir: "{app}"
 
 [Code]
 // ---------------------------------------------------------------------------

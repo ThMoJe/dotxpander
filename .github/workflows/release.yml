@@ -71,7 +71,7 @@ jobs:
         shell: pwsh
         run: |
           $version = if ("${{ github.ref_name }}" -match '^v') { "${{ github.ref_name }}" } else { "latest" }
-          $zipName = "dotxpander-${version}-${{ matrix.arch_name }}.zip"
+          $zipName = "dotXPANDER-${version}-${{ matrix.arch_name }}.zip"
           
           # Create staging folder
           $stageDir = "dist_${{ matrix.arch_name }}"
