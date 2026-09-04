@@ -69,9 +69,20 @@ const fn default_case_changer_enabled() -> bool {
     true // Enabled by default (opt-out feature)
 }
 
+/// Default snippet hotkey: Ctrl+Shift+T
+/// `MOD_CONTROL=2`, `MOD_SHIFT=4`, `VK_T=0x54`
+#[must_use]
+pub const fn default_snippet_hotkey() -> HotkeyConfig {
+    HotkeyConfig {
+        modifiers: 6,      // CTRL(2) | SHIFT(4)
+        virtual_key: 0x54, // 'T'
+    }
+}
+
 /// Default Case Changer hotkey: Ctrl+CapsLock
 /// `MOD_CONTROL=2`, `VK_CAPITAL=0x14`
-const fn default_case_changer_hotkey() -> HotkeyConfig {
+#[must_use]
+pub const fn default_case_changer_hotkey() -> HotkeyConfig {
     HotkeyConfig { modifiers: 2, virtual_key: 0x14 }
 }
 
@@ -694,10 +705,7 @@ pub fn log_debug(msg: &str) {
 pub fn default_config() -> AppConfig {
     AppConfig {
         language: "en".to_string(),
-        hotkey: HotkeyConfig {
-            modifiers: 6, // CTRL(2) | SHIFT(4)
-            virtual_key: 0x54, // 'T'
-        },
+        hotkey: default_snippet_hotkey(),
         buffer_size: 10,
         clipboard_restore_delay_ms: default_clipboard_restore_delay_ms(),
         quick_switch_enabled: true,
@@ -828,7 +836,7 @@ mod tests {
         assert_eq!(config.snippets[1].mode, ExpansionMode::Immediate);
         assert_eq!(config.snippets[2].trigger, ".sig");
         assert_eq!(config.snippets[2].mode, ExpansionMode::Immediate);
-        assert_eq!(config.snippets[3].trigger, "bio");
+        assert_eq!(config.snippets[3].trigger, ",bio");
         assert_eq!(config.snippets[3].mode, ExpansionMode::Hotkey);
     }
 

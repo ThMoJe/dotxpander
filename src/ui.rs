@@ -290,10 +290,12 @@ fn apply_language(window: &ConfigWindow, tray: &AppTray, lang: &str) {
     window.set_i18n_uninstall_tooltip(SharedString::from(s.uninstall_tooltip));
     window.set_i18n_btn_cancel_tooltip(SharedString::from(s.btn_cancel_tooltip));
     window.set_i18n_hotkey_label_tooltip(SharedString::from(s.hotkey_label_tooltip));
+    window.set_i18n_hotkey_reset_tooltip(SharedString::from(s.hotkey_reset_tooltip));
     window.set_i18n_quick_switch_label(SharedString::from(s.quick_switch_label));
     window.set_i18n_quick_switch_tooltip(SharedString::from(s.quick_switch_tooltip));
     window.set_i18n_case_changer_label(SharedString::from(s.case_changer_label));
     window.set_i18n_case_changer_tooltip(SharedString::from(s.case_changer_tooltip));
+    window.set_i18n_case_changer_reset_tooltip(SharedString::from(s.case_changer_reset_tooltip));
     window.set_i18n_tab_general(SharedString::from(s.tab_general));
     window.set_i18n_tab_snippets(SharedString::from(s.tab_snippets));
     window.set_i18n_section_hotkey(SharedString::from(s.section_hotkey));
@@ -417,24 +419,51 @@ fn setup_hotkey_capture_callbacks(
     });
 
     let window_weak = window.as_weak();
+    let pending_for_reset = pending_hotkey.clone();
+    let config_for_reset = config.clone();
+    let htid_reset = hook_thread_id;
+    window.on_reset_hotkey_to_default(move || {
+        if let Some(w) = window_weak.upgrade() {
+            let default_hk = crate::config::default_snippet_hotkey();
+            let current_config = config_for_reset.load();
+            let new_config = AppConfig { hotkey: default_hk.clone(), ..(**current_config).clone() };
+            if let Err(e) = config::save(&new_config) {
+                config::log_debug(&format!("Failed to save default hotkey config: {e}"));
+                eprintln!("[dotxpander] Failed to save default hotkey config: {e}");
+            } else {
+                config_for_reset.store(Arc::new(new_config));
+                unsafe { let _ = PostThreadMessageW(htid_reset, WM_REHOOK, WPARAM(0), LPARAM(0)); }
+            }
+            w.set_hotkey_display(hotkey_display_string(&default_hk));
+            w.set_hotkey_capturing(false);
+            w.set_hotkey_conflict(false);
+            w.set_hotkey_can_save(false);
+            w.set_hotkey_is_default(true);
+            *pending_for_reset.lock().unwrap() = None;
+        }
+    });
+
+    let window_weak = window.as_weak();
     let pending_for_save = pending_hotkey;
+    let config_for_save = config;
     let htid = hook_thread_id;
     window.on_save_hotkey(move || {
         if let Some(w) = window_weak.upgrade() {
             let opt_hk = pending_for_save.lock().unwrap().clone();
             if let Some(hk) = opt_hk {
-                let current_config = config.load();
+                let current_config = config_for_save.load();
                 let new_config = AppConfig { hotkey: hk.clone(), ..(**current_config).clone() };
                 if let Err(e) = config::save(&new_config) {
                     config::log_debug(&format!("Failed to save hotkey config: {e}"));
                     eprintln!("[dotxpander] Failed to save hotkey config: {e}");
                 } else {
-                    config.store(Arc::new(new_config));
+                    config_for_save.store(Arc::new(new_config));
                     unsafe { let _ = PostThreadMessageW(htid, WM_REHOOK, WPARAM(0), LPARAM(0)); }
                 }
                 w.set_hotkey_conflict(false);
                 w.set_hotkey_can_save(false);
                 w.set_hotkey_display(hotkey_display_string(&hk));
+                w.set_hotkey_is_default(hk == crate::config::default_snippet_hotkey());
                 *pending_for_save.lock().unwrap() = None;
             }
         }
@@ -779,6 +808,29 @@ fn setup_feature_toggle_callbacks(
     });
 
     let window_weak = window.as_weak();
+    let pending_for_cc_reset = pending_cc_hotkey.clone();
+    let config_for_cc_reset = config.clone();
+    window.on_reset_case_changer_hotkey_to_default(move || {
+        if let Some(w) = window_weak.upgrade() {
+            let default_hk = crate::config::default_case_changer_hotkey();
+            let current_config = config_for_cc_reset.load();
+            let new_config = AppConfig { case_changer_hotkey: default_hk.clone(), ..(**current_config).clone() };
+            if let Err(e) = config::save(&new_config) {
+                config::log_debug(&format!("CaseChanger default hotkey: failed to save: {e}"));
+                eprintln!("[dotxpander] CaseChanger default hotkey: failed to save: {e}");
+            } else {
+                config_for_cc_reset.store(Arc::new(new_config));
+            }
+            w.set_case_changer_hotkey_display(hotkey_display_string(&default_hk));
+            w.set_case_changer_hotkey_capturing(false);
+            w.set_case_changer_hotkey_conflict(false);
+            w.set_case_changer_hotkey_can_save(false);
+            w.set_case_changer_hotkey_is_default(true);
+            *pending_for_cc_reset.lock().unwrap() = None;
+        }
+    });
+
+    let window_weak = window.as_weak();
     let config_clone = config;
     let pending_for_save = pending_cc_hotkey;
     window.on_save_case_changer_hotkey(move || {
@@ -796,6 +848,7 @@ fn setup_feature_toggle_callbacks(
                 w.set_case_changer_hotkey_conflict(false);
                 w.set_case_changer_hotkey_can_save(false);
                 w.set_case_changer_hotkey_display(hotkey_display_string(&hk));
+                w.set_case_changer_hotkey_is_default(hk == crate::config::default_case_changer_hotkey());
                 *pending_for_save.lock().unwrap() = None;
             }
         }
@@ -934,12 +987,14 @@ pub fn setup_and_run(
             let snippets_model = Rc::new(VecModel::from(config_to_snippet_models(&current_config)));
             window.set_snippets(snippets_model.clone().into());
             window.set_hotkey_display(hotkey_display_string(&current_config.hotkey));
+            window.set_hotkey_is_default(current_config.hotkey == crate::config::default_snippet_hotkey());
             window.set_config_file_path(SharedString::from(config::config_path().to_string_lossy().to_string()));
             window.set_is_portable(config::is_portable());
             window.set_quick_switch_enabled(current_config.quick_switch_enabled);
             window.set_case_changer_enabled(current_config.case_changer_enabled);
             window.set_snippet_hotkey_enabled(current_config.snippet_hotkey_enabled);
             window.set_case_changer_hotkey_display(hotkey_display_string(&current_config.case_changer_hotkey));
+            window.set_case_changer_hotkey_is_default(current_config.case_changer_hotkey == crate::config::default_case_changer_hotkey());
             let arch = if cfg!(target_arch = "aarch64") { "ARM64" } else { "x64" };
             window.set_about_version_arch(SharedString::from(format!(
                 "v{} \u{2022} {}",

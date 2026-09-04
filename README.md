@@ -181,7 +181,7 @@ Nowhere, XX 99999
 mode = "immediate"
 
 [[snippets]]
-trigger = "bio"
+trigger = ",bio"
 replacement = "John Doe is the nameless man with no known past, living somewhere unknown and carrying a phone that never got a real number, whose entire story is that nobody yet knows who he really is."
 mode = "hotkey"
 ```

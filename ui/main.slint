@@ -95,6 +95,10 @@ export component ConfigWindow inherits Window {
     in-out property <bool> case-changer-hotkey-capturing: false;
     in-out property <bool> case-changer-hotkey-conflict: false;
     in-out property <bool> case-changer-hotkey-can-save: false;
+    in-out property <bool> hotkey-is-default: true;
+    in-out property <bool> case-changer-hotkey-is-default: true;
+    in-out property <string> i18n-hotkey-reset-tooltip: "";
+    in-out property <string> i18n-case-changer-reset-tooltip: "";
     in-out property <bool> snippet-hotkey-enabled: true;
     in-out property <string> i18n-tab-general: "";
     in-out property <string> i18n-tab-snippets: "";
@@ -128,6 +132,7 @@ export component ConfigWindow inherits Window {
     callback hotkey-clicked();
     callback key-recorded(string, bool, bool, bool, bool) -> bool;
     callback save-hotkey();
+    callback reset-hotkey-to-default();
     callback quit-app();
     callback language-changed(string);
     callback uninstall-app();
@@ -140,6 +145,7 @@ export component ConfigWindow inherits Window {
     callback case-changer-hotkey-clicked();
     callback case-changer-key-recorded(string, bool, bool, bool, bool) -> bool;
     callback save-case-changer-hotkey();
+    callback reset-case-changer-hotkey-to-default();
     callback open-website();
     callback open-github();
     callback open-license();
@@ -524,6 +530,61 @@ export component ConfigWindow inherits Window {
                         clicked => { root.save-hotkey(); }
                     }
                 }
+
+                // Reset to default button (↺)
+                Rectangle {
+                    border-width: 1px;
+                    border-color: (!hotkey-is-default && snippet-hotkey-enabled) ? (reset-touch.has-hover ? #b4befe : #89b4fa) : #45475a;
+                    border-radius: 6px;
+                    background: (!hotkey-is-default && snippet-hotkey-enabled) ? (reset-touch.has-hover ? #45475a : #313244) : #313244;
+                    width: 36px;
+                    height: 36px;
+                    opacity: (!hotkey-is-default && snippet-hotkey-enabled) ? 1.0 : 0.35;
+
+                    Path {
+                        x: (parent.width - self.width) / 2;
+                        y: (parent.height - self.height) / 2;
+                        width: 16px;
+                        height: 16px;
+                        viewbox-x: 0;
+                        viewbox-y: 0;
+                        viewbox-width: 24;
+                        viewbox-height: 24;
+                        stroke: (!hotkey-is-default && snippet-hotkey-enabled) ? #89b4fa : #6c7086;
+                        stroke-width: 2.2px;
+                        commands: "M 3 12 A 9 9 0 1 0 12 3 A 9.75 9.75 0 0 0 5.26 5.74 L 3 8 M 3 3 L 3 8 L 8 8";
+                    }
+
+                    reset-touch := TouchArea {
+                        enabled: !hotkey-is-default && snippet-hotkey-enabled;
+                        mouse-cursor: (!hotkey-is-default && snippet-hotkey-enabled) ? pointer : default;
+                        clicked => { root.reset-hotkey-to-default(); }
+                    }
+
+                    if reset-touch.has-hover : Rectangle {
+                        x: parent.width - self.width;
+                        y: -34px;
+                        width: reset-tip-text.preferred-width + 16px;
+                        height: 26px;
+                        background: #e6e9ef;
+                        border-width: 1px;
+                        border-color: #bcc0cc;
+                        border-radius: 4px;
+                        drop-shadow-blur: 4px;
+                        drop-shadow-color: #00000088;
+
+                        HorizontalLayout {
+                            padding-left: 8px;
+                            padding-right: 8px;
+                            reset-tip-text := Text {
+                                text: i18n-hotkey-reset-tooltip;
+                                font-size: 11px;
+                                color: #11111b;
+                                vertical-alignment: center;
+                            }
+                        }
+                    }
+                }
             }
 
             // ── Case Changer row: [✓] label  [capture box]  [Set] ───────────
@@ -691,6 +752,61 @@ export component ConfigWindow inherits Window {
                         enabled: case-changer-hotkey-can-save;
                         mouse-cursor: case-changer-hotkey-can-save ? pointer : default;
                         clicked => { root.save-case-changer-hotkey(); }
+                    }
+                }
+
+                // Reset to default button (↺)
+                Rectangle {
+                    border-width: 1px;
+                    border-color: (!case-changer-hotkey-is-default && case-changer-enabled) ? (cc-reset-touch.has-hover ? #b4befe : #89b4fa) : #45475a;
+                    border-radius: 6px;
+                    background: (!case-changer-hotkey-is-default && case-changer-enabled) ? (cc-reset-touch.has-hover ? #45475a : #313244) : #313244;
+                    width: 36px;
+                    height: 36px;
+                    opacity: (!case-changer-hotkey-is-default && case-changer-enabled) ? 1.0 : 0.35;
+
+                    Path {
+                        x: (parent.width - self.width) / 2;
+                        y: (parent.height - self.height) / 2;
+                        width: 16px;
+                        height: 16px;
+                        viewbox-x: 0;
+                        viewbox-y: 0;
+                        viewbox-width: 24;
+                        viewbox-height: 24;
+                        stroke: (!case-changer-hotkey-is-default && case-changer-enabled) ? #89b4fa : #6c7086;
+                        stroke-width: 2.2px;
+                        commands: "M 3 12 A 9 9 0 1 0 12 3 A 9.75 9.75 0 0 0 5.26 5.74 L 3 8 M 3 3 L 3 8 L 8 8";
+                    }
+
+                    cc-reset-touch := TouchArea {
+                        enabled: !case-changer-hotkey-is-default && case-changer-enabled;
+                        mouse-cursor: (!case-changer-hotkey-is-default && case-changer-enabled) ? pointer : default;
+                        clicked => { root.reset-case-changer-hotkey-to-default(); }
+                    }
+
+                    if cc-reset-touch.has-hover : Rectangle {
+                        x: parent.width - self.width;
+                        y: -34px;
+                        width: cc-reset-tip-text.preferred-width + 16px;
+                        height: 26px;
+                        background: #e6e9ef;
+                        border-width: 1px;
+                        border-color: #bcc0cc;
+                        border-radius: 4px;
+                        drop-shadow-blur: 4px;
+                        drop-shadow-color: #00000088;
+
+                        HorizontalLayout {
+                            padding-left: 8px;
+                            padding-right: 8px;
+                            cc-reset-tip-text := Text {
+                                text: i18n-case-changer-reset-tooltip;
+                                font-size: 11px;
+                                color: #11111b;
+                                vertical-alignment: center;
+                            }
+                        }
                     }
                 }
             }
@@ -1444,14 +1560,14 @@ export component ConfigWindow inherits Window {
                     spacing: 12px;
                     alignment: start;
 
-                    // Website button
+                    // User Guide & FAQ button
                     Rectangle {
                         border-width: 1px;
                         border-color: web-touch.has-hover ? #89b4fa : #45475a;
                         border-radius: 6px;
                         background: web-touch.has-hover ? #313244 : #1e1e2e;
                         height: 32px;
-                        min-width: 130px;
+                        min-width: 165px;
 
                         web-touch := TouchArea {
                             mouse-cursor: pointer;
@@ -1465,7 +1581,7 @@ export component ConfigWindow inherits Window {
                             alignment: center;
 
                             Text {
-                                text: "🌐 " + i18n-about-btn-website;
+                                text: "📖 " + i18n-about-btn-website;
                                 color: web-touch.has-hover ? #cdd6f4 : #bac2de;
                                 font-size: 12px;
                                 font-weight: 600;

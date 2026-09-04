@@ -215,7 +215,7 @@ begin
         'mode = "immediate"'                             + Chr(13)+Chr(10) +
         ''                                               + Chr(13)+Chr(10) +
         '[[snippets]]'                                   + Chr(13)+Chr(10) +
-        'trigger = "bio"'                                + Chr(13)+Chr(10) +
+        'trigger = ",bio"'                                + Chr(13)+Chr(10) +
         'replacement = "John Doe is the nameless man with no known past, living somewhere unknown and carrying a phone that never got a real number, whose entire story is that nobody yet knows who he really is."' + Chr(13)+Chr(10) +
         'mode = "hotkey"'                                + Chr(13)+Chr(10);
 

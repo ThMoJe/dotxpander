@@ -58,6 +58,8 @@ pub struct Strings {
 
     // Snippet hotkey tooltip
     pub hotkey_label_tooltip: &'static str,
+    pub hotkey_reset_tooltip: &'static str,
+    pub case_changer_reset_tooltip: &'static str,
 
     // Quick Switch
     pub quick_switch_label: &'static str,
@@ -153,8 +155,10 @@ const STRINGS_EN: Strings = Strings {
     uninstall_tooltip: "Uninstall and delete app and its files",
     uninstall_title: "Uninstall .XPANDER",
     uninstall_body: "This will permanently delete:\r\n\r\n  \u{2022} All settings and snippets\r\n  \u{2022} The application .exe file\r\n  \u{2022} The debug log\r\n\r\nThe app closes immediately. The .exe is removed a moment later.\r\n\r\nThis cannot be undone. Proceed?",
-    btn_cancel_tooltip: "Undo all changes since last save",
-    hotkey_label_tooltip: "When enabled the Hotkey inserts non-automatic snippets in any program",
+    btn_cancel_tooltip: "Discard all changes since last save",
+    hotkey_label_tooltip: "When enabled, pressing the hotkey expands non-immediate snippets in any app",
+    hotkey_reset_tooltip: "Reset to default: CTRL+SHIFT+T",
+    case_changer_reset_tooltip: "Reset to default: CTRL+CAPSLOCK",
     quick_switch_label: "Open dialog to follow Explorer path",
     quick_switch_tooltip: "When enabled and in an Open/Save dialog: switch to Explorer, select a folder or file, return to the dialog — it will automatically navigate to that folder.",
     case_menu_uppercase: "&UPPERCASE",
@@ -184,7 +188,7 @@ const STRINGS_EN: Strings = Strings {
     tab_about: "\u{2139} About",
     about_tagline: "Lightweight, native Windows text expander and productivity utility",
     about_developed_by: "Developed by",
-    about_btn_website: "Website",
+    about_btn_website: "User Guide & FAQ",
     about_btn_github: "GitHub",
     about_license: "MIT License",
     about_disclaimer_title: "Terms & Conditions / Disclaimer",
@@ -227,6 +231,8 @@ const STRINGS_DA: Strings = Strings {
     uninstall_body: "Dette vil permanent slette:\r\n\r\n  \u{2022} Alle indstillinger og genvejstekster\r\n  \u{2022} Applikationens .exe-fil\r\n  \u{2022} Debug-loggen\r\n\r\nAppen lukker med det samme. .exe-filen fjernes kort efter.\r\n\r\nDette kan ikke fortrydes. Forts\u{00E6}t?",
     btn_cancel_tooltip: "Fortryd alle ændringer siden sidste gem",
     hotkey_label_tooltip: "Når aktiveret indsætter genvejstast ikke-automatiske tekstklip i et hvilket som helst program",
+    hotkey_reset_tooltip: "Nulstil til standard: CTRL+SHIFT+T",
+    case_changer_reset_tooltip: "Nulstil til standard: CTRL+CAPSLOCK",
     quick_switch_label: "Åbn dialogboks følger sti i Stifinder",
     quick_switch_tooltip: "Når aktiveret og i en Åbn/Gem-dialog, skift til Stifinder, vælg en mappe, vend tilbage til åbn dialogboksen og den skifter automatisk til åbn i stifinder.",
     case_menu_uppercase: "&STORE BOGSTAVER",
@@ -256,7 +262,7 @@ const STRINGS_DA: Strings = Strings {
     tab_about: "\u{2139} Om",
     about_tagline: "Hurtig og let native Windows tekstudvider og produktivitetsv\u{00E6}rkt\u{00F8}j",
     about_developed_by: "Udviklet af",
-    about_btn_website: "Hjemmeside",
+    about_btn_website: "User Guide & FAQ",
     about_btn_github: "GitHub",
     about_license: "MIT-licens",
     about_disclaimer_title: "Vilk\u{00E5}r & Betingelser / Ansvarsfraskrivelse",
@@ -303,6 +309,8 @@ mod tests {
         assert!(!s.uninstall_body.is_empty(), "uninstall_body empty for {lang}");
         assert!(!s.btn_cancel_tooltip.is_empty(), "btn_cancel_tooltip empty for {lang}");
         assert!(!s.hotkey_label_tooltip.is_empty(), "hotkey_label_tooltip empty for {lang}");
+        assert!(!s.hotkey_reset_tooltip.is_empty(), "hotkey_reset_tooltip empty for {lang}");
+        assert!(!s.case_changer_reset_tooltip.is_empty(), "case_changer_reset_tooltip empty for {lang}");
         assert!(!s.quick_switch_label.is_empty(), "quick_switch_label empty for {lang}");
         assert!(!s.quick_switch_tooltip.is_empty(), "quick_switch_tooltip empty for {lang}");
         assert!(!s.case_menu_uppercase.is_empty(), "case_menu_uppercase empty for {lang}");
@@ -377,7 +385,7 @@ mod tests {
     fn test_about_tab_strings_content() {
         let en = get_strings("en");
         assert!(en.tab_about.contains("About"));
-        assert_eq!(en.about_btn_website, "Website");
+        assert_eq!(en.about_btn_website, "User Guide & FAQ");
         assert_eq!(en.about_btn_github, "GitHub");
         assert_eq!(en.about_license, "MIT License");
         assert!(en.about_disclaimer_text.contains("aiVOLUTION"));
@@ -385,7 +393,7 @@ mod tests {
 
         let da = get_strings("da");
         assert!(da.tab_about.contains("Om"));
-        assert_eq!(da.about_btn_website, "Hjemmeside");
+        assert_eq!(da.about_btn_website, "User Guide & FAQ");
         assert_eq!(da.about_btn_github, "GitHub");
         assert_eq!(da.about_license, "MIT-licens");
         assert!(da.about_disclaimer_text.contains("aiVOLUTION"));
