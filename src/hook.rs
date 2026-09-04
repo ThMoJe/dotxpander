@@ -254,6 +254,20 @@ impl HookManager {
                                 hk.modifiers, hk.virtual_key, e
                             ),
                         }
+
+                        // Resize in-memory buffer if buffer_size changed
+                        HOOK_STATE.with(|state| {
+                            if let Some(st) = state.borrow_mut().as_mut() {
+                                if st.buffer.capacity() != new_config.buffer_size {
+                                    debug_log!(
+                                        "Hook: resizing buffer from {} to {}",
+                                        st.buffer.capacity(),
+                                        new_config.buffer_size
+                                    );
+                                    st.buffer.resize(new_config.buffer_size);
+                                }
+                            }
+                        });
                     } else if msg.message == crate::case_changer::WM_SHOW_CASE_MENU {
                         // Show case-changer menu from the message loop (NOT from inside the hook
                         // callback). TrackPopupMenu runs an internal message pump, so calling it

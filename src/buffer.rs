@@ -147,6 +147,57 @@ impl KeyBuffer {
         }
     }
 
+    /// Returns the buffer's maximum capacity.
+    #[must_use]
+    pub const fn capacity(&self) -> usize {
+        self.capacity
+    }
+
+    /// Resizes the circular buffer to a new capacity.
+    ///
+    /// Preserves the most recent characters up to `new_capacity`. If the buffer
+    /// is shrinking, older characters are discarded.
+    pub fn resize(&mut self, new_capacity: usize) {
+        if new_capacity == self.capacity {
+            return;
+        }
+
+        if new_capacity == 0 {
+            self.buffer = Vec::new();
+            self.capacity = 0;
+            self.head = 0;
+            self.len = 0;
+            return;
+        }
+
+        // Collect existing valid characters in chronological order
+        let mut chars = Vec::with_capacity(self.len);
+        if self.len > 0 {
+            let start = if self.len < self.capacity { 0 } else { self.head };
+            for i in 0..self.len {
+                let idx = (start + i) % self.capacity;
+                chars.push(self.buffer[idx]);
+            }
+        }
+
+        // Retain only the most recent characters that fit into new_capacity
+        let kept = if chars.len() > new_capacity {
+            let skip = chars.len() - new_capacity;
+            &chars[skip..]
+        } else {
+            &chars[..]
+        };
+
+        let mut new_buf = vec!['\0'; new_capacity];
+        for (i, &ch) in kept.iter().enumerate() {
+            new_buf[i] = ch;
+        }
+
+        self.buffer = new_buf;
+        self.capacity = new_capacity;
+        self.head = kept.len() % new_capacity;
+        self.len = kept.len();
+    }
 }
 
 #[cfg(test)]
@@ -210,5 +261,59 @@ mod tests {
         assert_eq!(buf.len(), 0);
         assert!(buf.is_empty());
         assert_eq!(buf.content(), "");
+    }
+
+    #[test]
+    fn test_resize_expand() {
+        let mut buf = KeyBuffer::new(3);
+        buf.push('a');
+        buf.push('b');
+        buf.resize(5);
+        assert_eq!(buf.capacity(), 5);
+        assert_eq!(buf.len(), 2);
+        assert_eq!(buf.content(), "ab");
+        buf.push('c');
+        buf.push('d');
+        assert_eq!(buf.content(), "abcd");
+    }
+
+    #[test]
+    fn test_resize_shrink() {
+        let mut buf = KeyBuffer::new(5);
+        buf.push('a');
+        buf.push('b');
+        buf.push('c');
+        buf.push('d');
+        buf.push('e');
+        buf.resize(3);
+        assert_eq!(buf.capacity(), 3);
+        assert_eq!(buf.len(), 3);
+        assert_eq!(buf.content(), "cde");
+        buf.push('f');
+        assert_eq!(buf.content(), "def");
+    }
+
+    #[test]
+    fn test_resize_shrink_with_wraparound() {
+        let mut buf = KeyBuffer::new(3);
+        buf.push('a');
+        buf.push('b');
+        buf.push('c');
+        buf.push('d'); // buffer contains "bcd", head at 1
+        buf.resize(2);
+        assert_eq!(buf.capacity(), 2);
+        assert_eq!(buf.len(), 2);
+        assert_eq!(buf.content(), "cd");
+        buf.push('e');
+        assert_eq!(buf.content(), "de");
+    }
+
+    #[test]
+    fn test_resize_same_capacity() {
+        let mut buf = KeyBuffer::new(3);
+        buf.push('a');
+        buf.resize(3);
+        assert_eq!(buf.capacity(), 3);
+        assert_eq!(buf.content(), "a");
     }
 }

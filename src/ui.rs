@@ -271,6 +271,8 @@ fn apply_language(window: &ConfigWindow, tray: &AppTray, lang: &str) {
     window.set_i18n_hotkey_prompt(SharedString::from(s.hotkey_prompt));
     window.set_i18n_buffer_label(SharedString::from(s.buffer_label));
     window.set_i18n_buffer_empty(SharedString::from(s.buffer_empty));
+    window.set_i18n_buffer_size_label(SharedString::from(s.buffer_size_label));
+    window.set_i18n_buffer_size_tooltip(SharedString::from(s.buffer_size_tooltip));
     window.set_i18n_col_trigger(SharedString::from(s.col_trigger));
     window.set_i18n_col_trigger_tooltip(SharedString::from(s.col_trigger_tooltip));
     window.set_i18n_col_replacement(SharedString::from(s.col_replacement));
@@ -306,6 +308,7 @@ fn apply_language(window: &ConfigWindow, tray: &AppTray, lang: &str) {
     window.set_i18n_mode_portable(SharedString::from(s.mode_portable));
     window.set_i18n_mode_installed(SharedString::from(s.mode_installed));
     window.set_i18n_move_config(SharedString::from(s.move_config_btn));
+    window.set_i18n_move_config_tooltip(SharedString::from(s.move_config_tooltip));
     window.set_i18n_mode_portable_tooltip(SharedString::from(s.mode_portable_tooltip));
     window.set_i18n_tab_about(SharedString::from(s.tab_about));
     window.set_i18n_about_tagline(SharedString::from(s.about_tagline));
@@ -503,7 +506,8 @@ fn setup_snippet_callbacks(
     buffer_timer_slot: Rc<RefCell<Option<Timer>>>,
 ) {
     let window_weak = window.as_weak();
-    let config_clone = config;
+    let config_clone = config.clone();
+    let config_clone_for_cancel = config;
     let model_clone = snippets_model.clone();
     let htid = hook_thread_id;
     let active_win_save = active_window.clone();
@@ -525,7 +529,13 @@ fn setup_snippet_callbacks(
                     });
                 }
             }
-            let new_config = AppConfig { snippets: new_snippets, ..(**current_config).clone() };
+            let buf_size_val = w.get_buffer_size_text().parse::<usize>().unwrap_or(10).clamp(2, 25);
+            w.set_buffer_size_text(SharedString::from(buf_size_val.to_string()));
+            let new_config = AppConfig {
+                buffer_size: buf_size_val,
+                snippets: new_snippets,
+                ..(**current_config).clone()
+            };
             match config::save(&new_config) {
                 Ok(()) => {
                     config_clone.store(Arc::new(new_config));
@@ -559,6 +569,8 @@ fn setup_snippet_callbacks(
     let pos_cancel = saved_pos.clone();
     window.on_cancel_config(move || {
         if let Some(w) = window_weak.upgrade() {
+            let current_config = config_clone_for_cancel.load();
+            w.set_buffer_size_text(SharedString::from(current_config.buffer_size.to_string()));
             let scale = w.window().scale_factor();
             let phys_size = w.window().size();
             *size_cancel.lock().unwrap() = Some(LogicalSize::new(
@@ -855,6 +867,35 @@ fn setup_feature_toggle_callbacks(
     });
 }
 
+/// Wires up callbacks for the Buffer Size numeric stepper.
+fn setup_buffer_size_callbacks(window: &ConfigWindow) {
+    let window_weak = window.as_weak();
+    window.on_buffer_size_step(move |delta| {
+        if let Some(w) = window_weak.upgrade() {
+            let current = w.get_buffer_size_text().parse::<i32>().unwrap_or(10);
+            let next = (current + delta).clamp(2, 25);
+            w.set_buffer_size_text(SharedString::from(next.to_string()));
+        }
+    });
+
+    let window_weak = window.as_weak();
+    window.on_buffer_size_edited(move |text| {
+        if let Some(w) = window_weak.upgrade() {
+            let filtered: String = text.chars().filter(|c| c.is_ascii_digit()).take(2).collect();
+            w.set_buffer_size_text(SharedString::from(filtered));
+        }
+    });
+
+    let window_weak = window.as_weak();
+    window.on_buffer_size_focus_lost(move || {
+        if let Some(w) = window_weak.upgrade() {
+            let current = w.get_buffer_size_text().parse::<i32>().unwrap_or(2);
+            let clamped = current.clamp(2, 25);
+            w.set_buffer_size_text(SharedString::from(clamped.to_string()));
+        }
+    });
+}
+
 /// Opens the native Windows folder-picker dialog (IFileDialog / FOS_PICKFOLDERS).
 ///
 /// Returns `Some(path)` if the user selected a folder, or `None` if cancelled.
@@ -995,6 +1036,7 @@ pub fn setup_and_run(
             window.set_snippet_hotkey_enabled(current_config.snippet_hotkey_enabled);
             window.set_case_changer_hotkey_display(hotkey_display_string(&current_config.case_changer_hotkey));
             window.set_case_changer_hotkey_is_default(current_config.case_changer_hotkey == crate::config::default_case_changer_hotkey());
+            window.set_buffer_size_text(SharedString::from(current_config.buffer_size.to_string()));
             let arch = if cfg!(target_arch = "aarch64") { "ARM64" } else { "x64" };
             window.set_about_version_arch(SharedString::from(format!(
                 "v{} \u{2022} {}",
@@ -1026,6 +1068,7 @@ pub fn setup_and_run(
                     pending_cc_hotkey.clone(),
                 );
             }
+            setup_buffer_size_callbacks(&window);
 
             // Window quit and uninstall
             let htid = hook_thread_id;

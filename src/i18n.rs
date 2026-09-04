@@ -16,6 +16,8 @@ pub struct Strings {
     // Buffer
     pub buffer_label: &'static str,
     pub buffer_empty: &'static str,
+    pub buffer_size_label: &'static str,
+    pub buffer_size_tooltip: &'static str,
 
     // Snippet table
     pub col_trigger: &'static str,
@@ -127,8 +129,10 @@ const STRINGS_EN: Strings = Strings {
     hotkey_label: "Snippet hotkey:",
     hotkey_save: "Set",
     hotkey_prompt: "Press new key combination",
-    buffer_label: "Buffer:",
+    buffer_label: "Typed text currently in memory:",
     buffer_empty: "(empty)",
+    buffer_size_label: "Buffer size:",
+    buffer_size_tooltip: "Min. = 2, Max = 25",
     col_trigger: "Trigger (max 10)",
     col_trigger_tooltip: "When you type any of these character sequences they will be replaced either immediately or when you press the set Hotkey",
     col_replacement: "Replacement (trailing space?)",
@@ -183,7 +187,7 @@ const STRINGS_EN: Strings = Strings {
     mode_portable: "\u{1F4E6} Portable",
     mode_installed: "\u{1F4BF} Installed",
     move_config_btn: "Move Config File\u{2026}",
-    move_config_tooltip: "Move config file to a new folder (e.g., a cloud-synced folder to share settings across computers)",
+    move_config_tooltip: "Hint: Move to a cloud-synced folder (e.g., OneDrive, Dropbox) to share your snippets and settings across multiple computers automatically.",
     mode_portable_tooltip: "The app is running in Portable mode and you cannot change the folder where the config file is stored. To store the config file in a cloud-synced folder, install the app with the installer.",
     tab_about: "\u{2139} About",
     about_tagline: "Lightweight, native Windows text expander and productivity utility",
@@ -201,8 +205,10 @@ const STRINGS_DA: Strings = Strings {
     hotkey_label: "Tekstklip genvej:",
     hotkey_save: "Sæt",
     hotkey_prompt: "Tast ny taste-kombination",
-    buffer_label: "Buffer:",
+    buffer_label: "Indtastet tekst i hukommelsen nu:",
     buffer_empty: "(tom)",
+    buffer_size_label: "Bufferstørrelse:",
+    buffer_size_tooltip: "Min. = 2, Maks. = 25",
     col_trigger: "Sekvens (max 10)",
     col_trigger_tooltip: "Når du taster en af disse tegnsekvenser, erstattes de enten med det samme eller når du trykker på den valgte genvejstast",
     col_replacement: "Erstatning (mellemrum til sidst?)",
@@ -257,7 +263,7 @@ const STRINGS_DA: Strings = Strings {
     mode_portable: "\u{1F4E6} Portabel",
     mode_installed: "\u{1F4BF} Installeret",
     move_config_btn: "Flyt konfigurationsfil\u{2026}",
-    move_config_tooltip: "Flyt konfigurationsfilen til en ny mappe (fx en cloud-synkroniseret mappe for at dele indstillinger p\u{00E5} tv\u{00E6}rs af computere)",
+    move_config_tooltip: "Tip: Flyt til en cloud-synkroniseret mappe (fx OneDrive, Dropbox) for automatisk at dele dine tekstklip og indstillinger p\u{00E5} tv\u{00E6}rs af flere computere.",
     mode_portable_tooltip: "Appen k\u{00F8}rer i Portabel tilstand og du kan ikke ændre mappen, hvor konfigurationsfilen gemmes. For at gemme konfigurationsfilen i en cloud-synkroniseret mappe skal du installere appen med installationsprogrammet.",
     tab_about: "\u{2139} Om",
     about_tagline: "Hurtig og let native Windows tekstudvider og produktivitetsv\u{00E6}rkt\u{00F8}j",
@@ -281,6 +287,8 @@ mod tests {
         assert!(!s.hotkey_prompt.is_empty(), "hotkey_prompt empty for {lang}");
         assert!(!s.buffer_label.is_empty(), "buffer_label empty for {lang}");
         assert!(!s.buffer_empty.is_empty(), "buffer_empty empty for {lang}");
+        assert!(!s.buffer_size_label.is_empty(), "buffer_size_label empty for {lang}");
+        assert!(!s.buffer_size_tooltip.is_empty(), "buffer_size_tooltip empty for {lang}");
         assert!(!s.col_trigger.is_empty(), "col_trigger empty for {lang}");
         assert!(!s.col_trigger_tooltip.is_empty(), "col_trigger_tooltip empty for {lang}");
         assert!(!s.col_replacement.is_empty(), "col_replacement empty for {lang}");

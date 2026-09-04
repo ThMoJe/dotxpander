@@ -743,7 +743,7 @@ pub fn default_config() -> AppConfig {
 /// 1. If `config.toml` does not exist, create it from defaults.
 /// 2. If `config.toml` exists but is corrupt/invalid, automatically fall back
 ///    to `config.toml.bak` (written after every successful save).
-/// 3. `buffer_size` is clamped to 1..=256 regardless of what is in the file.
+/// 3. `buffer_size` is clamped to 2..=25 regardless of what is in the file.
 pub fn load() -> Result<AppConfig, ConfigError> {
     let path = config_path();
 
@@ -759,7 +759,7 @@ pub fn load() -> Result<AppConfig, ConfigError> {
             // Clamp buffer_size to a safe range — prevents both the
             // buffer_size=0 crash (usize underflow in pop/ends_with) and
             // absurdly large allocations from hand-edited config files.
-            config.buffer_size = config.buffer_size.clamp(1, 256);
+            config.buffer_size = config.buffer_size.clamp(2, 25);
             Ok(config)
         }
         Err(primary_err) => {
@@ -773,7 +773,7 @@ pub fn load() -> Result<AppConfig, ConfigError> {
                 let bak_contents = fs::read_to_string(&bak)?;
                 match toml::from_str::<AppConfig>(&bak_contents) {
                     Ok(mut config) => {
-                        config.buffer_size = config.buffer_size.clamp(1, 256);
+                        config.buffer_size = config.buffer_size.clamp(2, 25);
                         eprintln!("[dotxpander] INFO: Recovered config from backup.");
                         Ok(config)
                     }
@@ -836,7 +836,7 @@ mod tests {
         assert_eq!(config.snippets[1].mode, ExpansionMode::Immediate);
         assert_eq!(config.snippets[2].trigger, ".sig");
         assert_eq!(config.snippets[2].mode, ExpansionMode::Immediate);
-        assert_eq!(config.snippets[3].trigger, ",bio");
+        assert_eq!(config.snippets[3].trigger, "bio");
         assert_eq!(config.snippets[3].mode, ExpansionMode::Hotkey);
     }
 
@@ -940,7 +940,7 @@ mod tests {
     #[test]
     fn test_buffer_size_clamp_zero() {
         // buffer_size=0 used to cause usize underflow in KeyBuffer::pop().
-        // The load() function now clamps it to 1.
+        // The load() function now clamps it to 2.
         let toml_str = r#"
             buffer_size = 0
             [hotkey]
@@ -948,8 +948,8 @@ mod tests {
             virtual_key = 84
         "#;
         let mut config: AppConfig = toml::from_str(toml_str).expect("Should parse");
-        config.buffer_size = config.buffer_size.clamp(1, 256);
-        assert_eq!(config.buffer_size, 1, "buffer_size=0 should be clamped to 1");
+        config.buffer_size = config.buffer_size.clamp(2, 25);
+        assert_eq!(config.buffer_size, 2, "buffer_size=0 should be clamped to 2");
     }
 
     #[test]
@@ -961,8 +961,8 @@ mod tests {
             virtual_key = 84
         "#;
         let mut config: AppConfig = toml::from_str(toml_str).expect("Should parse");
-        config.buffer_size = config.buffer_size.clamp(1, 256);
-        assert_eq!(config.buffer_size, 256, "buffer_size=99999 should be clamped to 256");
+        config.buffer_size = config.buffer_size.clamp(2, 25);
+        assert_eq!(config.buffer_size, 25, "buffer_size=99999 should be clamped to 25");
     }
 
     #[test]
