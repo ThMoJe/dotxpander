@@ -265,6 +265,9 @@ impl HookManager {
                                         new_config.buffer_size
                                     );
                                     st.buffer.resize(new_config.buffer_size);
+                                    if let Ok(mut dbg) = st.buffer_debug.lock() {
+                                        st.buffer.write_content_to(&mut dbg);
+                                    }
                                 }
                             }
                         });

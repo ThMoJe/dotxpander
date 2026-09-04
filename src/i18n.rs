@@ -387,6 +387,7 @@ mod tests {
         assert!(da.quick_switch_tooltip.contains('Å'), "Expected Å in quick_switch_tooltip");
         assert!(da.about_tagline.contains('æ'), "Expected æ in about_tagline");
         assert!(da.about_disclaimer_title.contains('å'), "Expected å in about_disclaimer_title");
+        assert!(da.buffer_size_label.contains('ø'), "Expected ø in buffer_size_label");
     }
 
     #[test]
@@ -406,6 +407,23 @@ mod tests {
         assert_eq!(da.about_license, "MIT-licens");
         assert!(da.about_disclaimer_text.contains("aiVOLUTION"));
         assert!(da.about_disclaimer_text.contains("uden nogen form for garanti"));
+    }
+
+    #[test]
+    fn test_buffer_and_tooltip_content() {
+        let en = get_strings("en");
+        assert_eq!(en.buffer_label, "Typed text currently in memory:");
+        assert_eq!(en.buffer_size_label, "Buffer size:");
+        assert_eq!(en.buffer_size_tooltip, "Min. = 2, Max = 25");
+        assert!(en.move_config_tooltip.contains("Hint:"));
+        assert!(en.move_config_tooltip.contains("share your snippets"));
+
+        let da = get_strings("da");
+        assert_eq!(da.buffer_label, "Indtastet tekst i hukommelsen nu:");
+        assert_eq!(da.buffer_size_label, "Bufferstørrelse:");
+        assert_eq!(da.buffer_size_tooltip, "Min. = 2, Maks. = 25");
+        assert!(da.move_config_tooltip.contains("Tip:"));
+        assert!(da.move_config_tooltip.contains("dele dine tekstklip"));
     }
 }
 

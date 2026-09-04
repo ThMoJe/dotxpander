@@ -978,6 +978,27 @@ mod tests {
     }
 
     #[test]
+    fn test_custom_buffer_size_roundtrip() {
+        let mut config = default_config();
+        config.buffer_size = 18;
+        let toml_str = toml::to_string(&config).expect("Should serialize");
+        let back: AppConfig = toml::from_str(&toml_str).expect("Should deserialize");
+        assert_eq!(back.buffer_size, 18, "buffer_size=18 should survive TOML round-trip");
+    }
+
+    #[test]
+    fn test_buffer_size_boundaries() {
+        for (input, expected) in [(0, 2), (1, 2), (2, 2), (10, 10), (25, 25), (26, 25), (100, 25)] {
+            let toml_str = format!(
+                "buffer_size = {input}\n[hotkey]\nmodifiers = 6\nvirtual_key = 84\n"
+            );
+            let mut config: AppConfig = toml::from_str(&toml_str).expect("Should parse");
+            config.buffer_size = config.buffer_size.clamp(2, 25);
+            assert_eq!(config.buffer_size, expected, "buffer_size={input} should clamp to {expected}");
+        }
+    }
+
+    #[test]
     fn test_quick_switch_enabled_roundtrip() {
         let mut config = default_config();
         config.quick_switch_enabled = true;

@@ -20,6 +20,7 @@ Unlike electron-based expanders, dotXPANDER runs as a single, highly optimized n
 - **Immediate Mode**: Expands trigger strings instantly as you type (e.g. `.sig` → email signature).
 - **Hotkey Mode**: Expands triggers on demand using a configurable keyboard shortcut (e.g. `Ctrl + Shift + T`).
 - **Zero-Allocation Ring Buffer**: Keystroke matching runs against an in-memory ring buffer with zero heap allocations during active typing (~2.7 ns push latency).
+- **Configurable Memory Buffer**: Customize how many keystrokes to retain in memory (2 to 25 characters) with an interactive stepper in Settings. The internal ring buffer resizes dynamically on configuration save without restarting the application.
 - **WinUI 3 & Modern App Compatibility**: Uses an asynchronous clipboard injection pipeline with automatic modifier-key handling, avoiding dropped or duplicated characters in XAML and Chromium apps.
 
 ### Case & Space Changer (`Ctrl + CapsLock`)
@@ -45,7 +46,7 @@ Select text in any application and press `Ctrl + CapsLock` to transform the sele
 
 - **Config Location Wizard**: Choose where your `config.toml` lives during installation — default AppData or a cloud-synced folder (OneDrive, Dropbox, Google Drive) to automatically share snippets across multiple computers.
 - **Portable Mode**: When run without an installed registry key, dotXPANDER automatically loads and saves `config.toml` directly alongside the executable.
-- **In-App Management**: View your active mode ("Installed" vs. "Portable") and relocate your configuration file at any time from the Settings window.
+- **In-App Management & Cloud-Sync Hints**: View your active mode ("Installed" vs. "Portable") and relocate your configuration file at any time from the Settings window, complete with helpful cloud-sync guidance tooltips.
 
 ### Privacy & Resource Efficiency
 
@@ -225,7 +226,7 @@ mode = "hotkey"
 # Run in development mode
 cargo run
 
-# Run full test suite (145 tests)
+# Run full test suite (155 tests)
 cargo test
 
 # Run micro-benchmarks
@@ -247,7 +248,8 @@ cargo build --release
 - **Windows Setup Installer & Smart Uninstall**: Per-user Inno Setup installer with custom branded wizard images, Start Menu / Desktop shortcuts, autostart configuration, and dual-mode uninstallation (delegating to `unins000.exe` when installed, and delayed self-deletion in portable mode).
 - **Custom Config Location Wizard**: Interactive installer step to choose between default AppData and custom/cloud-synced folders (OneDrive, Dropbox, etc.) with automatic snippet preservation on upgrade.
 - **Runtime Portable Mode**: Automatic fallback to local-directory config when no installation registry key is detected.
-- **UI Mode Badge & About Tab**: Added mode indicator ("📦 Portable" / "💿 Installed"), About tab with live version / architecture badges, and "Move Config File…" relocation action in the Settings window.
+- **UI Mode Badge & About Tab**: Added mode indicator ("📦 Portable" / "💿 Installed"), About tab with live version / architecture badges, and "Move Config File…" relocation action in the Settings window with cloud-sync guidance tooltip.
+- **Configurable Keystroke Memory Buffer**: Added numeric input with `[-] [ 10 ] [+]` horizontal stepper controls in Settings to configure buffer capacity (2 to 25 characters), with on-the-fly zero-allocation ring buffer resizing (`KeyBuffer::resize`) and real-time typed memory synchronization.
 - **High-DPI Centering & Stable Window Layout**: Cursor-aware monitor work-area auto-centering, HiDPI scaling, and locked tab-switching constraints preventing layout jumps.
 - **Win32 Executable Metadata**: Embedded VERSIONINFO block (`ProductName`, `FileDescription`, `CompanyName`, `LegalCopyright`, `FileVersion`) — visible in File Explorer → Properties → Details and Windows Task Manager.
 - **Application Icon in Binary**: App icon (`ui/icon.ico`) embedded directly into `dotxpander.exe` — shown in File Explorer, Alt+Tab switcher, and taskbar without relying solely on the installer.
@@ -258,7 +260,7 @@ cargo build --release
 - **Quick Switch File Dialog Sync**: Auto-navigation of Windows file dialogs to the active File Explorer folder, including Windows 11 multi-tab Explorer support via COM.
 - **Release Optimization Pipeline**: Integrated Rust Nightly `build-std`, dead-code stripping MSVC linker flags, and UPX compression (~58% size reduction on x64).
 - **Rebranding**: Complete identity update to **dotXPANDER** by **aiVOLUTION**.
-- **Test Suite**: Expanded automated unit test suite to **145 unit tests** across geometry, filename transformations, configuration, and uninstall flows.
+- **Test Suite**: Expanded automated unit test suite to **155 unit tests** across ring buffer resizing, geometry, filename transformations, configuration, internationalization, and uninstall flows.
 
 ### v0.1.0
 

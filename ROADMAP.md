@@ -29,6 +29,14 @@ Project roadmap and milestone tracking for **dotXPANDER** by **aiVOLUTION**.
 - Implemented cursor-aware monitor work-area centering for multi-monitor setups.
 - Stabilized Slint layout constraint envelopes (`min-width`, `preferred-width`) to guarantee rock-solid window dimensions during tab navigation.
 
+### 6. Configurable Keystroke Buffer & Dynamic Resizing ✅
+- Added 2-character numeric input field and `[-] [ 10 ] [+]` horizontal stepper in the General Settings tab to configure keystroke memory size between 2 and 25 characters.
+- Implemented dynamic circular ring buffer resizing (`KeyBuffer::resize`) on configuration reload, updating the shared memory debug view immediately without requiring an application restart.
+- Updated memory field label to "Typed text currently in memory:" / "Indtastet tekst i hukommelsen nu:".
+
+### 7. Cloud Sync Guidance & Relocation Tooltips ✅
+- Added localized hover-over tooltips to the "Move Config File…" button in English and Danish explaining automated multi-computer synchronization via OneDrive, Dropbox, and other cloud storage providers.
+
 ---
 
 ## 🚀 Upcoming Milestones (Post-v0.2.0)

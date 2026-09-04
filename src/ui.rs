@@ -1130,6 +1130,11 @@ pub fn setup_and_run(
 
             let _ = window.show();
 
+            // Initialize buffer display immediately from shared debug buffer
+            if let Ok(content) = buffer_debug.try_lock() {
+                window.set_buffer_content(SharedString::from(content.as_str()));
+            }
+
             // Buffer debug timer (active ONLY while window exists)
             let timer = Timer::default();
             let w_weak = window.as_weak();

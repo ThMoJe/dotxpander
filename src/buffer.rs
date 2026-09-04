@@ -316,4 +316,45 @@ mod tests {
         assert_eq!(buf.capacity(), 3);
         assert_eq!(buf.content(), "a");
     }
+
+    #[test]
+    fn test_resize_empty_buffer() {
+        let mut buf = KeyBuffer::new(5);
+        buf.resize(10);
+        assert_eq!(buf.capacity(), 10);
+        assert_eq!(buf.len(), 0);
+        assert_eq!(buf.content(), "");
+        buf.push('x');
+        assert_eq!(buf.content(), "x");
+    }
+
+    #[test]
+    fn test_resize_to_zero() {
+        let mut buf = KeyBuffer::new(3);
+        buf.push('a');
+        buf.push('b');
+        buf.resize(0);
+        assert_eq!(buf.capacity(), 0);
+        assert_eq!(buf.len(), 0);
+        assert_eq!(buf.content(), "");
+        buf.push('c');
+        assert_eq!(buf.len(), 0);
+    }
+
+    #[test]
+    fn test_write_content_to() {
+        let mut buf = KeyBuffer::new(4);
+        buf.push('w');
+        buf.push('x');
+        buf.push('y');
+        buf.push('z');
+        let mut out = String::new();
+        buf.write_content_to(&mut out);
+        assert_eq!(out, "wxyz");
+
+        // Shrink and write again
+        buf.resize(2);
+        buf.write_content_to(&mut out);
+        assert_eq!(out, "yz");
+    }
 }
